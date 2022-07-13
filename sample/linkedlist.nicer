@@ -1,0 +1,22 @@
+type LinkedList is struct of E containing 
+    variable Size is number,
+    variable Head is Node of E,
+and can do
+    function AppendToEnd is function, taking E Element, does
+        # go to the end of the list
+        variable Current is Node Head
+        while Next of Current != null, do
+            Current is Next of Current
+        done
+        variable NewNode is Node of E where
+            Value is Element,
+            Next is null
+        done
+        Next of Current is NewNode
+    done
+done
+
+type Node is struct of E containing
+    variable Value is E,
+    variable Next is Node of E,
+done

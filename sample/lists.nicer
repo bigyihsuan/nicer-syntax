@@ -1,0 +1,11 @@
+constant Values is list of number containing 69, 420 and from 1 to 10 # ranges like this are always inclusive
+
+do PrintLine to Values # [69,420,1,2,3,4,5,6,7,8,9,10]
+do PrintLine to 3-th from Values # 1
+do PrintLine to 0-th to 5-th from Values # slice aka another list, inclusive: [69,420,1,2,3,4]
+do PrintLine to every 2-th from 1-th to end from Values # skipping indexes: [420,2,4,6,8,10]
+do PrintLine to every 3-th from start to 6-th from Values # [69,3]
+constant Four is number 4
+do PrintLine to every Fourth from Values # [69,4,8]
+
+constant Copy is list of number containing from start to end from Values # make a copy of Values

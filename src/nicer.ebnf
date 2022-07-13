@@ -1,0 +1,8 @@
+Stmt = Declaration | Assignment
+Declaration = ConstDecl | VarDecl .
+ConstDecl = "constant" ident "is" Type Value .
+VarDecl = "variable" ident "is" Type [Value] .
+Assignment = ident "is" Value
+
+Type = ident | ("list" ["of" Type]) | ("map" "of" Type "to" Type)
+Value = literal | ident | Range
