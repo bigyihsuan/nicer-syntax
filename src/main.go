@@ -32,7 +32,7 @@ func main() {
 	fmt.Println(file.Name())
 	nicerLexer := lexer.NewLexer(file)
 
-	for tok, _, v := nicerLexer.Lex(); tok != lexer.ItemEOF; tok, _, v = nicerLexer.Lex() {
-		fmt.Printf("%v\t\t%v\n", lexer.TokenString[tok], v)
+	for _,tokitem := range nicerLexer.LexAll() {
+		fmt.Printf("%v\n", tokitem)
 	}
 }

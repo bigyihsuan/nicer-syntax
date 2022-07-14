@@ -1,4 +1,4 @@
-function Fibonacci is function, taking number N, and returns number, does
+function Fibonacci is function, taking number N, and returning number, does
     variable Previous is number 0
     variable Current is number 1
 
@@ -11,19 +11,19 @@ function Fibonacci is function, taking number N, and returns number, does
     return Old
 done
 
-function RecursiveFibonacci is function, taking number N, and returns number, does
+function RecursiveFibonacci is function, taking number N, and returning number, does
     if N <= 0, then
         return 0
     done
     if 0 < N < 2, then
         return N
     done
-    return RecursiveFibonacci of (N-1) + RecursiveFibonacci of (N-2)
+    return do RecursiveFibonacci to (N-1) + do RecursiveFibonacci to (N-2)
 done
 
 function Main is function, taking list of string Argv, does
     variable Number is number
-    Number is 1-th from Argv toNumber
-    PrintLine of (Fibonacci of Number)
-    PrintLine of (RecursiveFibonacci of Number)
+    Number is do ToNumber to 1-th from Argv
+    do PrintLine of (Fibonacci of Number)
+    do PrintLine of (RecursiveFibonacci of Number)
 done

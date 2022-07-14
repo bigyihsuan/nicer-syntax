@@ -3,6 +3,7 @@ package lexer
 // https://pkg.go.dev/github.com/db47h/lex/state#example-package-Go
 
 import (
+	"fmt"
 	"unicode"
 
 	"github.com/db47h/lex"
@@ -18,6 +19,9 @@ const (
 	// literals
 	LT_Number
 	LT_String
+	LT_True
+	LT_False
+	LT_Null
 	// built-in type names
 	TN_Number
 	TN_String
@@ -36,8 +40,21 @@ const (
 	KW_Where
 	KW_Do
 	KW_Done
+	KW_Does
 	KW_Th
 	KW_Containing
+	KW_Taking
+	KW_Returning
+	KW_Return
+	// loops
+	KW_For
+	KW_While
+	KW_Loop
+	// conditionals
+	KW_If
+	KW_Then
+	KW_Else
+	// ranges
 	KW_From
 	KW_To
 	KW_Start
@@ -47,9 +64,29 @@ const (
 	KW_And
 	KW_Or
 	KW_Not
+	// symbolic operators
+	OP_Eq
+	OP_Neq
+	OP_Gt
+	OP_Lt
+	OP_GtEq
+	OP_LtEq
+	OP_Plus
+	OP_Minus
+	OP_Star
+	OP_Slash
+	OP_Percent
+	OP_Caret
+	OP_Lparen
+	OP_Rparen
+	OP_Comma
 )
 
 var keywords = map[string]lex.Token{
+	// literals
+	"true": LT_True,
+	"false": LT_False,
+	"null": LT_Null,
 	// built-in type names
 	"number": TN_Number,
 	"string": TN_String,
@@ -68,6 +105,7 @@ var keywords = map[string]lex.Token{
 	"where": KW_Where,
 	"do": KW_Do,
 	"done": KW_Done,
+	"does": KW_Does,
 	"-th": KW_Th,
 	"containing": KW_Containing,
 	"from": KW_From,
@@ -75,6 +113,17 @@ var keywords = map[string]lex.Token{
 	"start": KW_Start,
 	"end": KW_End,
 	"every": KW_Every,
+	"taking": KW_Taking,
+	"returning": KW_Returning,
+	"return": KW_Return,
+	// loops
+	"for": KW_For,
+	"while": KW_While,
+	"loop": KW_Loop,
+	// conditionals
+	"if": KW_If,
+	"then": KW_Then,
+	"else": KW_Else,
 	// boolean operators
 	"and": KW_And,
 	"or": KW_Or,
@@ -90,6 +139,9 @@ var TokenString = map[lex.Token]string{
 	// literals
 	LT_Number: "LT_Number",
 	LT_String: "LT_String",
+	LT_True: "LT_True",
+	LT_False: "LT_False",
+	LT_Null: "LT_Null",
 	// built-in type names
 	TN_Number: "TN_Number",
 	TN_String: "TN_String",
@@ -108,8 +160,21 @@ var TokenString = map[lex.Token]string{
 	KW_Where: "KW_Where",
 	KW_Do: "KW_Do",
 	KW_Done: "KW_Done",
+	KW_Does: "KW_Does",
 	KW_Th: "KW_Th",
 	KW_Containing: "KW_Containing",
+	KW_Taking: "KW_Taking",
+	KW_Returning: "KW_Returning",
+	KW_Return: "KW_Return",
+	// loops
+	KW_For: "KW_For",
+	KW_While: "KW_While",
+	KW_Loop: "KW_Loop",
+	// conditionals
+	KW_If: "KW_If",
+	KW_Then: "KW_Then",
+	KW_Else: "KW_Else",
+	// ranges
 	KW_From: "KW_From",
 	KW_To: "KW_To",
 	KW_Start: "KW_Start",
@@ -119,6 +184,34 @@ var TokenString = map[lex.Token]string{
 	KW_And: "KW_And",
 	KW_Or: "KW_Or",
 	KW_Not: "KW_Not",
+	// symbolic operators
+	OP_Eq: "OP_Eq",
+	OP_Neq: "OP_Neq",
+	OP_Gt: "OP_Gt",
+	OP_Lt: "OP_Lt",
+	OP_GtEq: "OP_GtEq",
+	OP_LtEq: "OP_LtEq",
+	OP_Plus: "OP_Plus",
+	OP_Minus: "OP_Minus",
+	OP_Star: "OP_Star",
+	OP_Slash: "OP_Slash",
+	OP_Percent: "OP_Percent",
+	OP_Caret: "OP_Caret",
+	OP_Lparen: "OP_Lparen",
+	OP_Rparen: "OP_Rparen",
+	OP_Comma: "OP_Comma",
+}
+
+type TokItem struct {
+	TokType lex.Token
+	TokName string
+	Position int
+	Value interface{}
+}
+
+// for String() string
+func (ti TokItem) String() string {
+	return fmt.Sprintf("{%s @ %v: `%s`}", ti.TokName, ti.Position, ti.Value)
 }
 
 type NicerLexer struct {
@@ -131,10 +224,18 @@ func NewLexer(file *lex.File) *NicerLexer {
 	return l
 }
 
+func (nl *NicerLexer) LexAll() []TokItem {
+	var tokens []TokItem
+	for tok, pos, v := nl.Lex(); tok != ItemEOF; tok, pos, v = nl.Lex() {
+		tokens = append(tokens, TokItem{tok, TokenString[tok], pos, v})
+	}
+	return tokens
+}
+
 func (nl *NicerLexer) program(s *lex.State) lex.StateFn {
 	r := s.Next()
 	pos := s.Pos()
-	switch r {
+	switch r { // single-character tokens
 	case lex.EOF:
 		s.Emit(pos, ItemEOF, nil)
 		return nil
@@ -143,13 +244,74 @@ func (nl *NicerLexer) program(s *lex.State) lex.StateFn {
 		return nil
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		return state.Number(LT_Number, LT_Number, '.')
-	case '"': // strings
+		case '"': // strings
 		return state.QuotedString(LT_String)
+	case ',':
+		s.Emit(pos, OP_Comma, string(r))
+		return nil
+	case '+':
+		s.Emit(pos, OP_Plus, string(r))
+		return nil
 	case '-': // either binary minus, unary minus, or -th operator
 		if s.Peek() == 't' {
 			return nl.keyword
 		}
-		return nil // TODO for now
+		s.Emit(pos, OP_Minus, string(r))
+		return nil
+	case '*':
+		s.Emit(pos, OP_Star, string(r))
+		return nil
+	case '/':
+		s.Emit(pos, OP_Slash, string(r))
+		return nil
+	case '%':
+		s.Emit(pos, OP_Percent, string(r))
+		return nil
+	case '^':
+		s.Emit(pos, OP_Caret, string(r))
+		return nil
+	case '=':
+		r := s.Next()
+		if r == '=' {
+			s.Emit(pos, OP_Eq, "==")
+		} else {
+			s.Emit(pos, ItemError, string(r))
+			s.Backup()
+		}
+		return nil
+	case '!':
+		r := s.Next()
+		if r == '=' {
+			s.Emit(pos, OP_Eq, "!=")
+		} else {
+			s.Emit(pos, ItemError, string(r))
+			s.Backup()
+		}
+		return nil
+	case '>':
+		r := s.Next()
+		if r == '=' {
+			s.Emit(pos, OP_GtEq, ">=")
+		} else {
+			s.Emit(pos, OP_Gt, ">")
+			s.Backup()
+		}
+		return nil
+	case '<':
+		r := s.Next()
+		if r == '=' {
+			s.Emit(pos, OP_LtEq, "<=")
+		} else {
+			s.Emit(pos, OP_Lt, "<")
+			s.Backup()
+		}
+		return nil
+	case '(':
+		s.Emit(pos, OP_Lparen, "(")
+		return nil
+	case ')':
+		s.Emit(pos, OP_Rparen, ")")
+		return nil
 	case '#': // comments
 		return nl.comment
 	}

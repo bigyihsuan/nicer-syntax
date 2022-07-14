@@ -1,0 +1,20 @@
+0 < N < Q
+0 < N and N < Q # combinable
+0 < N and Q > N # equivalent but not combinable
+
+# precedence
+A + B * C > -D % E and not F - G / H ^ I + J == 0
+# parsed as
+((A + (B * C)) > ((-D) % E)) and (not (((F - ((G / (H ^ I))) + J) == 0))
+
+
+# testing
+true and false
+not true and false
+true and not false
+not true and not false
+
+true or false
+not true or false
+true or not false
+not true or not false

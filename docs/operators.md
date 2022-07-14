@@ -57,7 +57,7 @@ When multiple operators of the same precedence are chained together, they are ev
 The following expression will be parsed as such, according to these precedence rules:
 
 ```perl
-a + b * c > -d % e and not f - g / h ^ i + j == 0
+A + B * C > -D % E and not F - G / H ^ I + J == 0
 # parsed as
-((a + (b * c)) > ((-d) % e)) and (not (((f - ((g / (h ^ i))) + j) == 0))
+((A + (B * C)) > ((-D) % E)) and (not (((F - ((G / (H ^ I))) + J) == 0))
 ```

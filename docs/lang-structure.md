@@ -81,9 +81,9 @@ done
 # chained if-else
 if Condition1, then
     do Something1
-elseif Condition2, then
+else if Condition2, then
     do Something2
-elseif Condition3, then
+else if Condition3, then
     do Something3
 else, then
     do SomethingElse
