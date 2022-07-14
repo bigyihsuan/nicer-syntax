@@ -1,3 +1,4 @@
+Program = {Stmt}
 Stmt = Declaration | Assignment
 Declaration = ConstDecl | VarDecl .
 ConstDecl = "constant" ident "is" Type Value .

@@ -1,0 +1,6 @@
+"hello world!"
+"escaped\nstring\n"
+"\\\\"
+"line1\nline2"
+"'single-quoted'"
+"double \"quote\" inside double quotes"

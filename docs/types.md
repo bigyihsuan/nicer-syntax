@@ -162,7 +162,6 @@ Type|Default
 `map`|`nothing`
 `struct`|`nothing`
 
-`nothing` is the value of the bottom-type, represening the lack of a value.
 `nothing` changes meaning based on what type it is exactly:
 
 * A `list of E with nothing` is an empty list.
