@@ -47,6 +47,7 @@ func NewParser(tokens []lexer.TokItem) Parser {
 	return Parser{tokens, &lexer.TokItem{TokType: lexer.ItemEOF, TokName: "nothing", Position: -1, Value: -1}}
 }
 
+// consume and return the next token in the token queue.
 func (p *Parser) getNextToken() lexer.TokItem {
 	tok := p.Tokens[0]
 	p.Tokens = p.Tokens[1:]
@@ -54,18 +55,30 @@ func (p *Parser) getNextToken() lexer.TokItem {
 	return tok
 }
 
+// peek at the front of the token queue.
 func (p *Parser) peekToken() *lexer.TokItem {
 	return &(p.Tokens[0])
 }
 
+// put the last-consumed token back onto the front of the token queue.
 func (p *Parser) putBackToken() {
 	p.Tokens = append([]lexer.TokItem{*p.lastToken}, p.Tokens...)
 }
 
+// consume a token and determine if it is of a desired token type.
 func (p *Parser) expectToken(tokType lex.Token, lastRule string) (bool, *ParseError) {
 	token := p.getNextToken()
 	if token.TokType != tokType {
 		return false, NewParseError(fmt.Sprintf("Expected token `%v`", lexer.TokenString[tokType]), token, lastRule)
+	}
+	return true, nil
+}
+
+// peek at a token and determine if it is of a desired token type.
+func (p *Parser) maybeToken(tokType lex.Token, lastRule string) (bool, *ParseError) {
+	token := p.peekToken()
+	if token.TokType != tokType {
+		return false, NewParseError(fmt.Sprintf("Expected token `%v`", lexer.TokenString[tokType]), *token, lastRule)
 	}
 	return true, nil
 }
@@ -291,20 +304,53 @@ func (p *Parser) ListValue() (bool, *ParseError) {
 		return p.StringLiteral()
 	case lexer.ItemIdent:
 		return true, nil
-	// TODO: Ranges
+	case lexer.KW_From, lexer.KW_Every:
+		return p.RangeLiteral()
 	default:
 		return false, NewParseError("TODO", *p.peekToken(), "ListValue")
 	}
 }
 
 func (p *Parser) RangeLiteral() (bool, *ParseError) {
-	maybeEvery := p.getNextToken()
-	if maybeEvery.TokType == lexer.KW_Every {
+	if ok, _ := p.maybeToken(lexer.KW_Every, "RangeLiteral-Every"); ok {
+		// consume `every`
+		p.getNextToken()
 		if ok, err := p.Nth(); !ok {
-			return false, err.addRule("RangeLiteral-Every-Nth")
+			return false, err.addRule("RangeLiteral-EveryNth")
 		}
 	}
-	return false, nil
+	if ok, err := p.expectToken(lexer.KW_From, "RangeLiteral-From"); !ok {
+		return false, err
+	}
+	if ok, err := p.RangeStart(); !ok {
+		return false, err.addRule("RangeLiteral-Start")
+	}
+	if ok, err := p.expectToken(lexer.KW_To, "RangeLiteral-To"); !ok {
+		return false, err
+	}
+	if ok, err := p.RangeEnd(); !ok {
+		return false, err.addRule("RangeLiteral-End")
+	}
+	return true, nil
+}
+
+func (p *Parser) RangeStart() (bool, *ParseError) {
+	if ok, _ := p.maybeToken(lexer.KW_Start, "RangeStart"); !ok {
+		if ok, err := p.Number(); !ok {
+			return false, err.addRule("RangeStart-StartN")
+		}
+	}
+	return true, nil
+}
+
+func (p *Parser) RangeEnd() (bool, *ParseError) {
+	if ok, _ := p.maybeToken(lexer.KW_End, "RangeEnd"); ok {
+		return true, nil
+	}
+	if ok, err := p.Number(); !ok {
+		return false, err.addRule("RangeEnd")
+	}
+	return true, nil
 }
 
 func (p *Parser) Ident() (bool, *ParseError) {
@@ -316,11 +362,11 @@ func (p *Parser) Ident() (bool, *ParseError) {
 }
 
 func (p *Parser) Number() (bool, *ParseError) {
-	if okLiteral, errLiteral := p.NumberLiteral(); okLiteral {
-		return okLiteral, errLiteral
+	if ok, _ := p.maybeToken(lexer.ItemIdent, "Number-Ident"); ok {
+		return p.Ident()
 	}
-	if okIdent, errIdent := p.Ident(); !okIdent {
-		return okIdent, errIdent
+	if ok, _ := p.maybeToken(lexer.LT_Number, "Number-NumberLiteral"); ok {
+		return p.NumberLiteral()
 	}
 	return false, NewParseError("Expected number", *p.lastToken, "Number")
 }
@@ -329,9 +375,10 @@ func (p *Parser) Nth() (bool, *ParseError) {
 	if ok, err := p.Number(); !ok {
 		return false, err.addRule("Nth-Number")
 	}
-	th := p.getNextToken()
-	if th.TokType != lexer.KW_Th {
-		return false, NewParseError("Expected `-th` for ordinal", th, "Nth-th")
-	}
-	return true, nil
+	return p.expectToken(lexer.KW_Th, "Nth-Th")
+	// th := p.getNextToken()
+	// if th.TokType != lexer.KW_Th {
+	// 	return false, NewParseError("Expected `-th` for ordinal", th, "Nth-th")
+	// }
+	// return true, nil
 }

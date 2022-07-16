@@ -20,7 +20,9 @@ Value = Literal | ident | RangeLiteral ;
 Literal = numberLiteral | booleanLiteral | stringLiteral | ListLiteral | MapLiteral | StructLiteral ;
 
 Number = numberLiteral | ident ;
-RangeLiteral = ["every" Nth] "from" ("start" | Number) "to" ("end" | Number) ;
+RangeLiteral = ["every" Nth] "from" RangeStart "to" RangeEnd ;
+RangeStart = "start" | Number ;
+RangeEnd = "end" | Number ;
 Nth = Number "-th" ;
 
-RangeIteration = ["every" Nth] "from" ("start" | Number) "to" ("end" | Number) "of" ident;
+RangeIteration = ["every" Nth] "from" RangeStart "to" RangeEnd "of" ident;

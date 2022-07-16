@@ -11,12 +11,12 @@ import (
 
 func TestNumbers(t *testing.T) {
 	numbers := []TestCase{
-		{"1", false},
-		{"12", false},
-		{"123", false},
-		{"123.456", false},
-		{"0.123456", false},
-		{".asdt123456", true},
+		{"1", true},
+		{"12", true},
+		{"123", true},
+		{"123.456", true},
+		{"0.123456", true},
+		{".asdt123456", false},
 	}
 
 	for _, number := range numbers {
@@ -31,7 +31,7 @@ func TestNumbers(t *testing.T) {
 
 		p := parser.NewParser([]lexer.TokItem{token})
 		_, err := p.NumberLiteral()
-		if err != nil && !number.shouldFail {
+		if err != nil && number.shouldSucceed {
 			t.Errorf("failed %v, got %v", number, err)
 		}
 	}
@@ -39,8 +39,8 @@ func TestNumbers(t *testing.T) {
 
 func TestBooleans(t *testing.T) {
 	booleans := []TestCase{
-		{"true", false},
-		{"false", false},
+		{"false", true},
+		{"true", true},
 	}
 	for _, boolean := range booleans {
 		text := []byte(boolean.input)
@@ -54,7 +54,7 @@ func TestBooleans(t *testing.T) {
 
 		p := parser.NewParser([]lexer.TokItem{token})
 		_, err := p.BooleanLiteral()
-		if err != nil && !boolean.shouldFail {
+		if err != nil && boolean.shouldSucceed {
 			t.Errorf("failed %v, got %v", boolean, err)
 		}
 	}
@@ -62,14 +62,14 @@ func TestBooleans(t *testing.T) {
 
 func TestStrings(t *testing.T) {
 	strings := []TestCase{
-		{`"hello world!"`, false},
-		{`"escaped\nstring\n"`, false},
-		{`"\\\\"`, false},
-		{`"line1\nline2"`, false},
-		{`"'single-quoted'"`, false},
-		{`"double \"quote\" inside double quotes"`, false},
+		{`"hello world!"`, true},
+		{`"escaped\nstring\n"`, true},
+		{`"\\\\"`, true},
+		{`"line1\nline2"`, true},
+		{`"'single-quoted'"`, true},
+		{`"double \"quote\" inside double quotes"`, true},
 		{`"should\
-fail"`, true},
+fail"`, false},
 	}
 	for _, str := range strings {
 		text := []byte(str.input)
@@ -83,7 +83,7 @@ fail"`, true},
 
 		p := parser.NewParser([]lexer.TokItem{token})
 		_, err := p.StringLiteral()
-		if err != nil && !str.shouldFail {
+		if err != nil && str.shouldSucceed {
 			t.Errorf("failed %v, got %v", str, err)
 		}
 	}
