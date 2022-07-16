@@ -6,7 +6,7 @@ do PrintLine to 0-th to 5-th from Values # slice aka another list, inclusive: [6
 do PrintLine to every 2-th from 1-th to end from Values # skipping indexes: [420,2,4,6,8,10]
 do PrintLine to every 3-th from start to 6-th from Values # [69,3]
 constant Four is number 4
-do PrintLine to every Fourth from Values # [69,4,8]
+do PrintLine to every Four-th from Values # [69,4,8]
 
 constant Copy is list of number containing from start to end from Values # make a copy of Values
 

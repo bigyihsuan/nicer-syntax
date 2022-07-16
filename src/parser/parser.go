@@ -7,8 +7,8 @@ import (
 	"github.com/fatih/color"
 )
 
-var COLOR_ERROR = color.New(color.BgHiRed).Add(color.FgHiBlack).Add(color.Bold).Sprintf
-var COLOR_KEYWORD = color.New(color.FgGreen).Sprintf
+var COLOR_ERROR = color.New(color.FgHiRed).Add(color.Underline).Add(color.Bold).Sprintf
+var COLOR_KEYWORD = color.New(color.FgYellow).Sprintf
 var COLOR_TOKEN = color.New(color.FgCyan).Sprintf
 var COLOR_RULE = color.New(color.FgMagenta).Sprintf
 
@@ -33,7 +33,7 @@ func (pe *ParseError) addRule(rule string) *ParseError {
 
 // for interface error.Error()
 func (pe *ParseError) Error() string {
-	return fmt.Sprintf("%v `%v` because of token `%v` within rule `%v`", COLOR_ERROR("PARSE ERROR:"), COLOR_KEYWORD(pe.Reason), COLOR_TOKEN("%v", pe.Token), COLOR_RULE(pe.LastRule))
+	return fmt.Sprintf("%v `%v` because of token `%v` within rule trace `%v`", COLOR_ERROR("PARSE ERROR:"), COLOR_KEYWORD(pe.Reason), COLOR_TOKEN("%v", pe.Token), COLOR_RULE(pe.LastRule))
 }
 
 type Parser struct {

@@ -1,5 +1,7 @@
 # nicer-syntax
 
+"when you're a tutor for cs and you dictate the code to the student but they just write your words down instead of code, the language" --- Me, bigyihsuan
+
 ## Goals
 
 * Make the langauge's syntax as "nice" as possible (to me at least).
@@ -18,8 +20,9 @@
   * Number
   * String
   * List
+  * Map
   * Struct
-* Type names come ??? the variable
+* Type names come after the variable
 * Variables must be explicitly typed, no exceptions
 * Identifiers *must* be PascalCase. Tokens starting with lowercase letters are assumed to be keywords. (shamlessly stolen without much thought from [Cognate][cognate])
 
