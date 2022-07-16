@@ -21,7 +21,16 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	text = []byte("constant Values is list of number containing nothing, done")
+	// tests := []string{
+	// 	"from start to end",
+	// 	"from 10 to end",
+	// 	"from start to 5",
+	// 	"from 4 to 7",
+	// 	"from Id1 to Id2",
+	// 	"every 2-th from start to end",
+	// 	"every Skip-th from start to end",
+	// }
+	// text = []byte(s)
 	fmt.Println(string(text))
 	byteReader := bytes.NewBuffer(text)
 	file := lex.NewFile(filename, byteReader)

@@ -4,9 +4,10 @@
 
 Ranges are a big part of the language. They are *always* inclusive, no exceptions.
 
-Ranges must contain a starting index and an ending index.
+Ranges must contain a starting index and an ending index. Both of these *must* be integer numbers.
+If the bounds have a decimal portion, it will be truncated (floored) prior to range evaluation.
 These indexes can be substituted by keywords `start` and `end`.
-You can explicitly say which collections to base `start` and `end` by using `start of CollectionName` and `end of CollectionName`.
+You can explicitly say which collections to base `start` and `end` off of by using `of CollectionName` after the range.
 
 There is also an optional `every` clause, which will take every `N`-th element, starting from the starting index.
 However, this is merely syntactic sugar, and a range like `from 10 to 20` is the same as `every 1-th from 10 to 20`.
@@ -16,8 +17,10 @@ from start to end
 every 1-th from start to end
 every 2-th from 10 to 20
 
-constant List is list of numbers containing 0, 1, 1, 2, 3, 5, 8, and 13
-for number I from start of List to end of List, do
+constant List is list of numbers containing 0, 1, 1, 2, 3, 5, 8, and 13, done
+every 2-th from start to end of List # explicit collection name
+
+for number I from start of List to end of List, loop # range in a for loop
     # do something
 done
 ```

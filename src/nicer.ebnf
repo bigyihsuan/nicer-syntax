@@ -12,8 +12,15 @@ IdentType = ident "is" TypeName
 IdentAssignment = ident "is" Value ;
 
 TypeName = ident | ("list" "of" Type) | ("map" "of" Type "to" Type) ;
-Value = Literal | ident | Range ;
-Literal = numberLiteral | booleanLiteral | stringLiteral | ListLiteral | MapLiteral | StructLiteral ;
 ListLiteral = "containing" ("nothing" | ListElements) "done" ;
 ListElements = ListValue "," [{ListValue ","} "and" ListValue] ;
-ListValue = numberLiteral | booleanLiteral | stringLiteral  | ident | Range
+ListValue = numberLiteral | booleanLiteral | stringLiteral  | ident | Range; 
+
+Value = Literal | ident | RangeLiteral ;
+Literal = numberLiteral | booleanLiteral | stringLiteral | ListLiteral | MapLiteral | StructLiteral ;
+
+Number = numberLiteral | ident ;
+RangeLiteral = ["every" Nth] "from" ("start" | Number) "to" ("end" | Number) ;
+Nth = Number "-th" ;
+
+RangeIteration = ["every" Nth] "from" ("start" | Number) "to" ("end" | Number) "of" ident;

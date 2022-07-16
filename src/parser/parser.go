@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"nicer-syntax/src/lexer"
 
+	"github.com/db47h/lex"
+
 	"github.com/fatih/color"
 )
 
@@ -33,7 +35,7 @@ func (pe *ParseError) addRule(rule string) *ParseError {
 
 // for interface error.Error()
 func (pe *ParseError) Error() string {
-	return fmt.Sprintf("%v `%v` because of token `%v` within rule trace `%v`", COLOR_ERROR("PARSE ERROR:"), COLOR_KEYWORD(pe.Reason), COLOR_TOKEN("%v", pe.Token), COLOR_RULE(pe.LastRule))
+	return fmt.Sprintf("%v %v because of token `%v` within rule trace `%v`", COLOR_ERROR("PARSE ERROR:"), COLOR_KEYWORD(pe.Reason), COLOR_TOKEN("%v", pe.Token), COLOR_RULE(pe.LastRule))
 }
 
 type Parser struct {
@@ -45,7 +47,7 @@ func NewParser(tokens []lexer.TokItem) Parser {
 	return Parser{tokens, &lexer.TokItem{TokType: lexer.ItemEOF, TokName: "nothing", Position: -1, Value: -1}}
 }
 
-func (p *Parser) nextToken() lexer.TokItem {
+func (p *Parser) getNextToken() lexer.TokItem {
 	tok := p.Tokens[0]
 	p.Tokens = p.Tokens[1:]
 	p.lastToken = &tok
@@ -58,6 +60,14 @@ func (p *Parser) peekToken() *lexer.TokItem {
 
 func (p *Parser) putBackToken() {
 	p.Tokens = append([]lexer.TokItem{*p.lastToken}, p.Tokens...)
+}
+
+func (p *Parser) expectToken(tokType lex.Token, lastRule string) (bool, *ParseError) {
+	token := p.getNextToken()
+	if token.TokType != tokType {
+		return false, NewParseError(fmt.Sprintf("Expected token `%v`", lexer.TokenString[tokType]), token, lastRule)
+	}
+	return true, nil
 }
 
 //! Calling Conventions
@@ -75,13 +85,11 @@ func (p *Parser) Parse() (bool, *ParseError) {
 }
 
 func (p *Parser) Program() (bool, *ParseError) {
-	ok, err := p.Stmt()
-	if !ok {
+	if ok, err := p.Stmt(); !ok {
 		return false, err.addRule("Program-Stmt")
 	}
-	semicolon := p.nextToken()
-	if semicolon.TokType != lexer.ItemSemicolon {
-		return false, NewParseError("Expected semicolon to end statement", semicolon, "Program")
+	if ok, err := p.expectToken(lexer.ItemSemicolon, "Program"); !ok {
+		return false, err
 	}
 	return true, nil
 }
@@ -95,13 +103,11 @@ func (p *Parser) Stmt() (bool, *ParseError) {
 }
 
 func (p *Parser) IdentAssignment() (bool, *ParseError) {
-	ident := p.nextToken()
-	if ident.TokType != lexer.ItemIdent {
-		return false, NewParseError("Expected identifier", ident, "IdentAssignment")
+	if ok, err := p.Ident(); !ok {
+		return false, err.addRule("IdentAssignment-Ident")
 	}
-	is := p.nextToken()
-	if is.TokType != lexer.KW_Is {
-		return false, NewParseError("Expected `is`", is, "IdentAssignment")
+	if ok, err := p.expectToken(lexer.KW_Is, "IdentAssignment-Is"); !ok {
+		return false, err
 	}
 	return p.Value()
 }
@@ -118,9 +124,8 @@ func (p *Parser) IdentDeclaration() (bool, *ParseError) {
 }
 
 func (p *Parser) VarDecl() (bool, *ParseError) {
-	variable := p.nextToken()
-	if variable.TokType != lexer.KW_Variable {
-		return false, NewParseError("Expected `variable`", variable, "VarDecl")
+	if ok, err := p.expectToken(lexer.KW_Variable, "VarDecl-Variable"); !ok {
+		return false, err
 	}
 	if ok, err := p.IdentType(); !ok {
 		return false, err.addRule("VarDecl-IdentType")
@@ -133,9 +138,8 @@ func (p *Parser) VarDecl() (bool, *ParseError) {
 }
 
 func (p *Parser) ConstDecl() (bool, *ParseError) {
-	constant := p.nextToken()
-	if constant.TokType != lexer.KW_Constant {
-		return false, NewParseError("Expected `constant`", constant, "ConstDecl")
+	if ok, err := p.expectToken(lexer.KW_Constant, "ConstDecl-Constant"); !ok {
+		return false, err
 	}
 	if ok, err := p.IdentType(); !ok {
 		return false, err.addRule("ConstDecl-IdentType")
@@ -147,13 +151,11 @@ func (p *Parser) ConstDecl() (bool, *ParseError) {
 }
 
 func (p *Parser) IdentType() (bool, *ParseError) {
-	ident := p.nextToken()
-	if ident.TokType != lexer.ItemIdent {
-		return false, NewParseError("Expected identifer", ident, "IdentType")
+	if ok, err := p.expectToken(lexer.ItemIdent, "IdentType-Ident"); !ok {
+		return false, err
 	}
-	is := p.nextToken()
-	if is.TokType != lexer.KW_Is {
-		return false, NewParseError("Expected `is", is, "IdentType")
+	if ok, err := p.expectToken(lexer.KW_Is, "IdentType-Is"); !ok {
+		return false, err
 	}
 	if ok, err := p.TypeName(); !ok {
 		return false, err.addRule("IdentType-TypeName")
@@ -162,27 +164,24 @@ func (p *Parser) IdentType() (bool, *ParseError) {
 }
 
 func (p *Parser) TypeName() (bool, *ParseError) {
-	typeName := p.nextToken()
+	typeName := p.getNextToken()
 	switch typeName.TokType {
 	case lexer.TN_Number, lexer.TN_String, lexer.TN_Boolean:
 		return true, nil
 	case lexer.TN_List:
-		of := p.nextToken()
-		if of.TokType != lexer.KW_Of {
-			return false, NewParseError("Expected `of` for list element type", of, "TypeName")
+		if ok, err := p.expectToken(lexer.KW_Of, "TypeName-ListOf"); !ok {
+			return false, err
 		}
 		return p.TypeName()
 	case lexer.TN_Map:
-		of := p.nextToken()
-		if of.TokType != lexer.KW_Of {
-			return false, NewParseError("Expected `of` for map key type", of, "TypeName")
+		if ok, err := p.expectToken(lexer.KW_Of, "TypeName-MapOfKey"); !ok {
+			return false, err
 		}
 		if ok, err := p.TypeName(); !ok {
 			return false, err.addRule("TypeName-MapKey")
 		}
-		to := p.nextToken()
-		if to.TokType != lexer.KW_To {
-			return false, NewParseError("Expected `to` for map value type", to, "TypeName")
+		if ok, err := p.expectToken(lexer.KW_To, "TypeName-MapToValue"); !ok {
+			return false, err
 		}
 		return p.TypeName()
 	case lexer.ItemIdent: // possibly undeclared typename
@@ -208,55 +207,43 @@ func (p *Parser) Value() (bool, *ParseError) {
 }
 
 func (p *Parser) NumberLiteral() (bool, *ParseError) {
-	tok := p.nextToken()
-	fmt.Println("NumberLiteral", tok.Value)
-	if tok.TokType != lexer.LT_Number {
-		p.putBackToken()
-		return false, NewParseError("Expected literal", tok, "NumberLiteral")
+	if ok, err := p.expectToken(lexer.LT_Number, "NumberLiteral"); !ok {
+		return false, err
 	}
 	return true, nil
 }
 
 func (p *Parser) BooleanLiteral() (bool, *ParseError) {
-	tok := p.nextToken()
-	fmt.Println("BooleanLiteral", tok.Value)
-	if tok.TokType != lexer.LT_Boolean {
-		p.putBackToken()
-		return false, NewParseError("Expected literal", tok, "BooleanLiteral")
+	if ok, err := p.expectToken(lexer.LT_Boolean, "BooleanLiteral"); !ok {
+		return false, err
 	}
 	return true, nil
 }
 
 func (p *Parser) StringLiteral() (bool, *ParseError) {
-	tok := p.nextToken()
-	fmt.Println("StringLiteral", tok.Value)
-	if tok.TokType != lexer.LT_String {
-		p.putBackToken()
-		return false, NewParseError("Expected literal", tok, "StringLiteral")
+	if ok, err := p.expectToken(lexer.LT_String, "StringLiteral"); !ok {
+		return false, err
 	}
 	return true, nil
 }
 
 func (p *Parser) ListLiteral() (bool, *ParseError) {
-	containing := p.nextToken()
-	if containing.TokType != lexer.KW_Containing {
-		return false, NewParseError("Expected `containing` for list literal", containing, "ListLiteral")
+	if ok, err := p.expectToken(lexer.KW_Containing, "ListLiteral-Containing"); !ok {
+		return false, err
 	}
 	element := p.peekToken()
 	if element.TokType == lexer.LT_Nothing {
-		p.nextToken() // consume `nothing`
-		done := p.nextToken()
-		if done.TokType != lexer.KW_Done {
-			return false, NewParseError("Expected `done` for empty list literal", done, "ListLiteral")
+		p.getNextToken() // consume `nothing`
+		if ok, err := p.expectToken(lexer.KW_Done, "ListLiteral-NothingDone"); !ok {
+			return false, err
 		}
 		return true, nil
 	}
 	if ok, err := p.ListElements(); !ok {
 		return false, err.addRule("ListLiteral")
 	}
-	done := p.nextToken()
-	if done.TokType != lexer.KW_Done {
-		return false, NewParseError("Expected `done` for end of list literal", done, "ListLiteral")
+	if ok, err := p.expectToken(lexer.KW_Done, "ListLiteral-SomethingDone"); !ok {
+		return false, err
 	}
 	return true, nil
 }
@@ -265,9 +252,8 @@ func (p *Parser) ListElements() (bool, *ParseError) {
 	if ok, err := p.ListValue(); !ok {
 		return false, err.addRule("ListElements-One")
 	}
-	comma := p.nextToken()
-	if comma.TokType != lexer.OP_Comma {
-		return false, NewParseError("Expected comma after list element", comma, "ListElements-Comma")
+	if ok, err := p.expectToken(lexer.OP_Comma, "ListElements-OneComma"); !ok {
+		return false, err
 	}
 	if p.peekToken().TokType == lexer.KW_Done {
 		// single element, exit
@@ -275,24 +261,22 @@ func (p *Parser) ListElements() (bool, *ParseError) {
 	}
 	for {
 		if p.peekToken().TokType == lexer.KW_And { // exit when see the last element
-			p.nextToken() // consume `and``
+			p.getNextToken() // consume `and``
 			break
 		}
 		if ok, err := p.ListValue(); !ok {
 			return false, err.addRule("ListElements-MoreThan1")
 		}
-		comma := p.nextToken()
-		if comma.TokType != lexer.OP_Comma {
-			return false, NewParseError("Expected comma after list element", comma, "ListElements-Comma-MoreThan3")
+		if ok, err := p.expectToken(lexer.OP_Comma, "ListElements-TwoComma"); !ok {
+			return false, err
 		}
 	}
 	if ok, err := p.ListValue(); !ok {
 		// last element
 		return false, err.addRule("ListElements-LastElement")
 	}
-	comma = p.nextToken()
-	if comma.TokType != lexer.OP_Comma {
-		return false, NewParseError("Expected comma after last element", comma, "ListElements-LastElementComma")
+	if ok, err := p.expectToken(lexer.OP_Comma, "ListElements-LastComma"); !ok {
+		return false, err
 	}
 	return true, nil
 }
@@ -311,4 +295,43 @@ func (p *Parser) ListValue() (bool, *ParseError) {
 	default:
 		return false, NewParseError("TODO", *p.peekToken(), "ListValue")
 	}
+}
+
+func (p *Parser) RangeLiteral() (bool, *ParseError) {
+	maybeEvery := p.getNextToken()
+	if maybeEvery.TokType == lexer.KW_Every {
+		if ok, err := p.Nth(); !ok {
+			return false, err.addRule("RangeLiteral-Every-Nth")
+		}
+	}
+	return false, nil
+}
+
+func (p *Parser) Ident() (bool, *ParseError) {
+	ident := p.getNextToken()
+	if ident.TokType != lexer.ItemIdent {
+		return false, NewParseError("Expected identifier", ident, "Ident")
+	}
+	return true, nil
+}
+
+func (p *Parser) Number() (bool, *ParseError) {
+	if okLiteral, errLiteral := p.NumberLiteral(); okLiteral {
+		return okLiteral, errLiteral
+	}
+	if okIdent, errIdent := p.Ident(); !okIdent {
+		return okIdent, errIdent
+	}
+	return false, NewParseError("Expected number", *p.lastToken, "Number")
+}
+
+func (p *Parser) Nth() (bool, *ParseError) {
+	if ok, err := p.Number(); !ok {
+		return false, err.addRule("Nth-Number")
+	}
+	th := p.getNextToken()
+	if th.TokType != lexer.KW_Th {
+		return false, NewParseError("Expected `-th` for ordinal", th, "Nth-th")
+	}
+	return true, nil
 }
