@@ -3,11 +3,14 @@ package parser
 import (
 	"fmt"
 	"nicer-syntax/src/lexer"
+
+	"github.com/fatih/color"
 )
 
-type Node struct {
-	lexer.TokItem
-}
+var COLOR_ERROR = color.New(color.BgHiRed).Add(color.FgHiBlack).Add(color.Bold).Sprintf
+var COLOR_KEYWORD = color.New(color.FgGreen).Sprintf
+var COLOR_TOKEN = color.New(color.FgCyan).Sprintf
+var COLOR_RULE = color.New(color.FgMagenta).Sprintf
 
 type ParseError struct {
 	Reason   string
@@ -30,7 +33,7 @@ func (pe *ParseError) addRule(rule string) *ParseError {
 
 // for interface error.Error()
 func (pe *ParseError) Error() string {
-	return fmt.Sprintf("PARSE ERROR: `%v` because token `%v` within rule `%v`", pe.Reason, pe.Token, pe.LastRule)
+	return fmt.Sprintf("%v `%v` because of token `%v` within rule `%v`", COLOR_ERROR("PARSE ERROR:"), COLOR_KEYWORD(pe.Reason), COLOR_TOKEN("%v", pe.Token), COLOR_RULE(pe.LastRule))
 }
 
 type Parser struct {
@@ -304,6 +307,7 @@ func (p *Parser) ListValue() (bool, *ParseError) {
 		return p.StringLiteral()
 	case lexer.ItemIdent:
 		return true, nil
+	// TODO: Ranges
 	default:
 		return false, NewParseError("TODO", *p.peekToken(), "ListValue")
 	}

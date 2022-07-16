@@ -21,7 +21,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	text = []byte("constant Values is list of number containing 1, done")
+	text = []byte("constant Values is list of number containing nothing, done")
 	fmt.Println(string(text))
 	byteReader := bytes.NewBuffer(text)
 	file := lex.NewFile(filename, byteReader)
@@ -35,5 +35,5 @@ func main() {
 	p := parser.NewParser(tokens)
 	result, err := p.Parse()
 	fmt.Printf("result: %v\n", result)
-	fmt.Printf("err: %v\n", err)
+	fmt.Printf("%v\n", err)
 }
