@@ -20,8 +20,9 @@ Lists are inherently generic: they do not care what is contained within. More in
 List literals are a comma-separated list of elements after the type declaration, with the last element preceded by `and`.
 
 ```perl
-variable MemeNumbers is list of number containing 69, 420, and 9001 done
-variable RangedList is list of number containing every 1-th from 10 to 20 done
+variable MemeNumbers is list of number containing 69, 420, and 9001, done
+variable RangedList is list of number containing every 1-th from 10 to 20, done
+variable OneElement is list of number containing 1, done
 ```
 
 ## Maps
@@ -34,7 +35,7 @@ Assigning a value to a key requires indexing the map.
 If a key doesn't exist, it will be created automatically with a default value.
 
 ```perl
-variable HouseNumbers is map of number to string containing 123 as "bob", 345 as "pat", and 420 as "dog" done
+variable HouseNumbers is map of number to string containing 123 as "bob", 345 as "pat", and 420 as "dog", done
 999-th of HouseNumbers is "rich" # map now contains key 999 with value "rich"
 23-th of HouseNumbers is nothing # use default value of string (empty string) to init key 23
 ```
@@ -52,11 +53,11 @@ start from Hello       # "H"
 5-th from Hello        # " "
 6-th to end from Hello # "World!"
 
-variable Numbers is list of numbers containing every 1-th from 0 to 100 done
+variable Numbers is list of numbers containing every 1-th from 0 to 100, done
 50-th from Numbers                      # 50
 every 2-th from 1-th to end from Values # [1, 3, 5, ... 99]
 
-variable HouseNumbers is map of string to number containing "bob" as 123, "pat" as 345, "dog" as 420 done
+variable HouseNumbers is map of string to number containing "bob" as 123, "pat" as 345, "dog" as 420, done
 "bob"-th from HouseNumbers # 123
 "pat"-th from HouseNumbers # 345
 "abc"-th from HouseNumbers # 0 ; this is because the key does not exist and gives the default value of `number`

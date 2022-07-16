@@ -15,8 +15,7 @@ const (
 	// literals
 	LT_Number
 	LT_String
-	LT_True
-	LT_False
+	LT_Boolean
 	LT_Nothing
 	// built-in type names
 	TN_Number
@@ -81,8 +80,8 @@ const (
 
 var keywords = map[string]lex.Token{
 	// literals
-	"true":    LT_True,
-	"false":   LT_False,
+	"true":    LT_Boolean,
+	"false":   LT_Boolean,
 	"nothing": LT_Nothing,
 	// built-in type names
 	"number": TN_Number,
@@ -136,8 +135,7 @@ var TokenString = map[lex.Token]string{
 	// literals
 	LT_Number:  "LT_Number",
 	LT_String:  "LT_String",
-	LT_True:    "LT_True",
-	LT_False:   "LT_False",
+	LT_Boolean: "LT_Boolean",
 	LT_Nothing: "LT_Nothing",
 	// built-in type names
 	TN_Number: "TN_Number",
@@ -197,6 +195,15 @@ var TokenString = map[lex.Token]string{
 	OP_Lparen:  "OP_Lparen",
 	OP_Rparen:  "OP_Rparen",
 	OP_Comma:   "OP_Comma",
+}
+
+var IsTypeName = map[lex.Token]bool{
+	TN_Number: true,
+	TN_String: true,
+	TN_List:   true,
+	TN_Map:    true,
+	TN_Struct: true,
+	ItemIdent: true,
 }
 
 type TokItem struct {

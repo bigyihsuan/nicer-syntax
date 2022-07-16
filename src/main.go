@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"nicer-syntax/src/lexer"
+	"nicer-syntax/src/parser"
 	"os"
 
 	"github.com/db47h/lex"
@@ -25,7 +26,12 @@ func main() {
 	fmt.Println(file.Name())
 	nicerLexer := lexer.NewLexer(file)
 	tokens := nicerLexer.LexAll()
-	for _, tokitem := range tokens {
-		fmt.Printf("%v\n", tokitem)
-	}
+	// for _, tokitem := range tokens {
+	// 	fmt.Printf("%v\n", tokitem)
+	// }
+
+	p := parser.NewParser(tokens)
+	result, err := p.Parse()
+	fmt.Printf("result: %v\n", result)
+	fmt.Printf("err: %v\n", err)
 }

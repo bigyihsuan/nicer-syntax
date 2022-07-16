@@ -1,9 +1,19 @@
-Program = {Stmt}
-Stmt = Declaration | Assignment
-Declaration = ConstDecl | VarDecl .
-ConstDecl = "constant" ident "is" Type Value .
-VarDecl = "variable" ident "is" Type [Value] .
-Assignment = ident "is" Value
+# notation
+# () = grouping
+# {} = 0 or more
+# [] = 0 or 1
 
-Type = ident | ("list" ["of" Type]) | ("map" "of" Type "to" Type)
-Value = literal | ident | Range
+Program = {Stmt semicolon} ;
+Stmt = IdentDeclaration | IdentAssignment ;
+IdentDeclaration = ConstDecl | VarDecl ;
+ConstDecl = "constant" IdentDecl Value ;
+VarDecl = "variable" IdentDecl [Value] ;
+IdentType = ident "is" Type
+IdentAssignment = ident "is" Value ;
+
+Type = ident | ("list" "of" Type) | ("map" "of" Type "to" Type) ;
+Value = Literal | ident | Range ;
+Literal = numberLiteral | booleanLiteral | stringLiteral | ListLiteral | MapLiteral | StructLiteral ;
+ListLiteral = "containing" ("nothing" | ListElements) "done" ;
+ListElements = ListOne [ListElements] | ListOne "and" ListOne ;
+ListOne = Value "," ;

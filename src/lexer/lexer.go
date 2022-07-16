@@ -32,6 +32,7 @@ func (nl *NicerLexer) program(s *lex.State) lex.StateFn {
 	pos := s.Pos()
 	switch r { // single-character tokens
 	case lex.EOF:
+		s.Emit(pos, ItemSemicolon, nil)
 		s.Emit(pos, ItemEOF, nil)
 		return nil
 	case '\n': // newlines separate statements
