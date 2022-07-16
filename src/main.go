@@ -21,6 +21,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	text = []byte("constant Values is list of number containing 1, done")
+	fmt.Println(string(text))
 	byteReader := bytes.NewBuffer(text)
 	file := lex.NewFile(filename, byteReader)
 	fmt.Println(file.Name())

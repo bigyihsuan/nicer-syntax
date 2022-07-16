@@ -19,6 +19,7 @@ const (
 	LT_Nothing
 	// built-in type names
 	TN_Number
+	TN_Boolean
 	TN_String
 	TN_List
 	TN_Map
@@ -84,11 +85,12 @@ var keywords = map[string]lex.Token{
 	"false":   LT_Boolean,
 	"nothing": LT_Nothing,
 	// built-in type names
-	"number": TN_Number,
-	"string": TN_String,
-	"list":   TN_List,
-	"map":    TN_Map,
-	"struct": TN_Struct,
+	"number":  TN_Number,
+	"boolean": TN_Boolean,
+	"string":  TN_String,
+	"list":    TN_List,
+	"map":     TN_Map,
+	"struct":  TN_Struct,
 	// declaration keywords
 	"variable": KW_Variable,
 	"constant": KW_Constant,
@@ -138,11 +140,12 @@ var TokenString = map[lex.Token]string{
 	LT_Boolean: "LT_Boolean",
 	LT_Nothing: "LT_Nothing",
 	// built-in type names
-	TN_Number: "TN_Number",
-	TN_String: "TN_String",
-	TN_List:   "TN_List",
-	TN_Map:    "TN_Map",
-	TN_Struct: "TN_Struct",
+	TN_Number:  "TN_Number",
+	TN_Boolean: "TN_Boolean",
+	TN_String:  "TN_String",
+	TN_List:    "TN_List",
+	TN_Map:     "TN_Map",
+	TN_Struct:  "TN_Struct",
 	// declaration keywords
 	KW_Variable: "KW_Variable",
 	KW_Constant: "KW_Constant",
@@ -195,15 +198,6 @@ var TokenString = map[lex.Token]string{
 	OP_Lparen:  "OP_Lparen",
 	OP_Rparen:  "OP_Rparen",
 	OP_Comma:   "OP_Comma",
-}
-
-var IsTypeName = map[lex.Token]bool{
-	TN_Number: true,
-	TN_String: true,
-	TN_List:   true,
-	TN_Map:    true,
-	TN_Struct: true,
-	ItemIdent: true,
 }
 
 type TokItem struct {

@@ -8,12 +8,12 @@ Stmt = IdentDeclaration | IdentAssignment ;
 IdentDeclaration = ConstDecl | VarDecl ;
 ConstDecl = "constant" IdentDecl Value ;
 VarDecl = "variable" IdentDecl [Value] ;
-IdentType = ident "is" Type
+IdentType = ident "is" TypeName
 IdentAssignment = ident "is" Value ;
 
-Type = ident | ("list" "of" Type) | ("map" "of" Type "to" Type) ;
+TypeName = ident | ("list" "of" Type) | ("map" "of" Type "to" Type) ;
 Value = Literal | ident | Range ;
 Literal = numberLiteral | booleanLiteral | stringLiteral | ListLiteral | MapLiteral | StructLiteral ;
 ListLiteral = "containing" ("nothing" | ListElements) "done" ;
-ListElements = ListOne [ListElements] | ListOne "and" ListOne ;
-ListOne = Value "," ;
+ListElements = ListValue "," [{ListValue ","} "and" ListValue] ;
+ListValue = numberLiteral | booleanLiteral | stringLiteral  | ident | Range
