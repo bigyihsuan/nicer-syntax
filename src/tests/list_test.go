@@ -37,10 +37,8 @@ func TestParseListLiteral(t *testing.T) {
 		text := []byte(list.input)
 		byteReader := bytes.NewBuffer(text)
 		file := lex.NewFile("TestListLiteral "+list.input, byteReader)
-		// fmt.Println(file.Name())
 		nicerLexer := lexer.NewLexer(file)
 		tokens := nicerLexer.LexAll()
-		// fmt.Printf("token: %v\n", token)
 
 		p := parser.NewParser(tokens)
 		var err *parser.ParseError

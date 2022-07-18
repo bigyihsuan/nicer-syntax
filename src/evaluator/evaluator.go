@@ -1,7 +1,7 @@
 package evaluator
 
 type Evaluable interface {
-	Evaluate() NicerValue
+	Evaluate() *NicerValue
 }
 
 type NicerValue struct {

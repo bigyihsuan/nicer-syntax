@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"nicer-syntax/ast"
+	"nicer-syntax/evaluator"
 	"nicer-syntax/lexer"
 
 	"github.com/db47h/lex"
@@ -223,6 +224,22 @@ func (p *Parser) Value() (bool, *ParseError) {
 	}
 }
 
+func (p *Parser) PrimitiveLiteral() (bool, *ParseError, evaluator.Evaluable) {
+	switch p.peekToken().TokType {
+	case lexer.LT_Number:
+		ok, err, lit := p.NumberLiteral()
+		return ok, err, lit
+	case lexer.LT_Boolean:
+		ok, err, lit := p.BooleanLiteral()
+		return ok, err, lit
+	case lexer.LT_String:
+		ok, err, lit := p.StringLiteral()
+		return ok, err, lit
+	default:
+		return false, NewParseError("Expected primitive literal", *p.peekToken(), "PrimitiveLiteral"), nil
+	}
+}
+
 func (p *Parser) NumberLiteral() (bool, *ParseError, *ast.NumberLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_Number, "NumberLiteral"); !ok {
 		return false, err, nil
@@ -345,16 +362,20 @@ func (p *Parser) RangeLiteral() (bool, *ParseError) {
 }
 
 func (p *Parser) RangeStart() (bool, *ParseError) {
-	if ok, _ := p.maybeToken(lexer.KW_Start, "RangeStart"); !ok {
-		if ok, err := p.Number(); !ok {
-			return false, err.addRule("RangeStart-StartN")
-		}
+	if ok, _ := p.maybeToken(lexer.KW_Start, "RangeStart"); ok {
+		p.getNextToken() // consume start
+		return true, nil
+	}
+	if ok, err := p.Number(); !ok {
+		return false, err.addRule("RangeStart-StartN")
 	}
 	return true, nil
+
 }
 
 func (p *Parser) RangeEnd() (bool, *ParseError) {
 	if ok, _ := p.maybeToken(lexer.KW_End, "RangeEnd"); ok {
+		p.getNextToken() // consume end
 		return true, nil
 	}
 	if ok, err := p.Number(); !ok {
@@ -390,25 +411,24 @@ func (p *Parser) Nth() (bool, *ParseError) {
 	return ok, err
 }
 
-func (p *Parser) FunctionCall() (bool, *ParseError) {
+func (p *Parser) FunctionCall() (bool, *ParseError, *ast.FunctionCall) {
 	call := ast.FunctionCall{}
 	if ok, err, _ := p.expectToken(lexer.KW_Do, "FunctionCall-Do"); !ok {
-		return false, err
+		return false, err, nil
 	}
 	if ok, err, funcname := p.expectToken(lexer.ItemIdent, "FunctionCall-FuncName"); !ok {
-		return false, err
+		return false, err, nil
 	} else {
 		call.FunctionName = *funcname
 	}
 	if ok, err, _ := p.expectToken(lexer.KW_To, "FunctionCall-To"); !ok {
-		return false, err
+		return false, err, nil
 	}
-	// TODO: Change to values
-	if ok, err, tok := p.NumberLiteral(); !ok {
-		return false, err.addRule("FunctionCall-Parameter1")
+	// TODO: Change to proper expr
+	if ok, err, primitive := p.PrimitiveLiteral(); !ok {
+		return false, err.addRule("FunctionCall-Parameter1"), nil
 	} else {
-		call.Parameters = append(call.Parameters, tok.TokItem)
+		call.Parameters = append(call.Parameters, primitive)
 	}
-	call.Evaluate()
-	return true, nil
+	return true, nil, &call
 }

@@ -14,10 +14,11 @@ IdentAssignment = ident "is" Value ;
 TypeName = ident | ("list" "of" Type) | ("map" "of" Type "to" Type) ;
 ListLiteral = "containing" ("nothing" | ListElements) "done" ;
 ListElements = ListValue "," [{ListValue ","} "and" ListValue] ;
-ListValue = numberLiteral | booleanLiteral | stringLiteral  | ident | Range; 
+ListValue = Primitive | ident | Range; 
 
 Value = Literal | ident | RangeLiteral ;
-Literal = numberLiteral | booleanLiteral | stringLiteral | ListLiteral | MapLiteral | StructLiteral ;
+Literal = Primitive | ListLiteral | MapLiteral | StructLiteral ;
+PrimitiveLitearl = numberLiteral | booleanLiteral | stringLiteral;
 
 Number = numberLiteral | ident ;
 RangeLiteral = ["every" Nth] "from" RangeStart "to" RangeEnd ;

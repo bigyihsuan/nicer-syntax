@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"fmt"
 	"math/big"
 	"nicer-syntax/evaluator"
 	"nicer-syntax/lexer"
@@ -9,14 +8,13 @@ import (
 )
 
 type Primitive interface {
-	evaluator.Evaluable
 }
 
 type NumberLiteral struct {
 	*lexer.TokItem
 }
 
-func (lit NumberLiteral) Evaluate() float64 {
+func (lit NumberLiteral) Evaluate() *evaluator.NicerValue {
 	var f float64
 	switch l := lit.TokValue; l.(type) {
 	case *big.Int:
@@ -24,19 +22,19 @@ func (lit NumberLiteral) Evaluate() float64 {
 	case *big.Float:
 		f, _ = l.(*big.Float).Float64()
 	}
-	return f
+	return &evaluator.NicerValue{Value: f}
 }
 
 type BooleanLiteral struct {
 	*lexer.TokItem
 }
 
-func (lit BooleanLiteral) Evaluate() bool {
+func (lit BooleanLiteral) Evaluate() *evaluator.NicerValue {
 	b, err := strconv.ParseBool(lit.TokValue.(string))
 	if err != nil {
 		panic(err)
 	} else {
-		return b
+		return &evaluator.NicerValue{Value: b}
 	}
 }
 
@@ -44,16 +42,22 @@ type StringLiteral struct {
 	*lexer.TokItem
 }
 
-func (lit StringLiteral) Evaluate() string {
-	return lit.TokValue.(string)
+func (lit StringLiteral) Evaluate() *evaluator.NicerValue {
+	return &evaluator.NicerValue{Value: lit.TokValue.(string)}
 }
 
 type FunctionCall struct {
 	FunctionName lexer.TokItem
-	Parameters   []*lexer.TokItem
+	// TODO: Proper Expr
+	Parameters []evaluator.Evaluable
 }
 
-func (fc FunctionCall) Evaluate() evaluator.NicerValue {
-	fmt.Println(fc)
-	return evaluator.NicerValue{Value: nil}
+func (fc FunctionCall) Evaluate() *evaluator.NicerValue {
+	funcname := fc.FunctionName.TokValue.(string)
+	if fun, ok := BuiltInFunctions[funcname]; ok {
+		return fun(fc.Parameters)
+	} else {
+		// TODO: User-defined functions
+		return nil
+	}
 }
