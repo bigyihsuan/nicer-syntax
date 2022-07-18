@@ -2,7 +2,8 @@ package parser
 
 import (
 	"fmt"
-	"nicer-syntax/src/lexer"
+	"nicer-syntax/ast"
+	"nicer-syntax/lexer"
 
 	"github.com/db47h/lex"
 
@@ -44,7 +45,7 @@ type Parser struct {
 }
 
 func NewParser(tokens []lexer.TokItem) Parser {
-	return Parser{tokens, &lexer.TokItem{TokType: lexer.ItemEOF, TokName: "nothing", Position: -1, Value: -1}}
+	return Parser{tokens, &lexer.TokItem{TokType: lexer.ItemEOF, TokName: "nothing", TokPosition: -1, TokValue: ""}}
 }
 
 // consume and return the next token in the token queue.
@@ -66,12 +67,12 @@ func (p *Parser) putBackToken() {
 }
 
 // consume a token and determine if it is of a desired token type.
-func (p *Parser) expectToken(tokType lex.Token, lastRule string) (bool, *ParseError) {
+func (p *Parser) expectToken(tokType lex.Token, lastRule string) (bool, *ParseError, *lexer.TokItem) {
 	token := p.getNextToken()
 	if token.TokType != tokType {
-		return false, NewParseError(fmt.Sprintf("Expected token `%v`", lexer.TokenString[tokType]), token, lastRule)
+		return false, NewParseError(fmt.Sprintf("Expected token `%v`", lexer.TokenString[tokType]), token, lastRule), nil
 	}
-	return true, nil
+	return true, nil, &token
 }
 
 // peek at a token and determine if it is of a desired token type.
@@ -101,7 +102,7 @@ func (p *Parser) Program() (bool, *ParseError) {
 	if ok, err := p.Stmt(); !ok {
 		return false, err.addRule("Program-Stmt")
 	}
-	if ok, err := p.expectToken(lexer.ItemSemicolon, "Program"); !ok {
+	if ok, err, _ := p.expectToken(lexer.ItemSemicolon, "Program"); !ok {
 		return false, err
 	}
 	return true, nil
@@ -119,7 +120,7 @@ func (p *Parser) IdentAssignment() (bool, *ParseError) {
 	if ok, err := p.Ident(); !ok {
 		return false, err.addRule("IdentAssignment-Ident")
 	}
-	if ok, err := p.expectToken(lexer.KW_Is, "IdentAssignment-Is"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_Is, "IdentAssignment-Is"); !ok {
 		return false, err
 	}
 	return p.Value()
@@ -137,7 +138,7 @@ func (p *Parser) IdentDeclaration() (bool, *ParseError) {
 }
 
 func (p *Parser) VarDecl() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.KW_Variable, "VarDecl-Variable"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_Variable, "VarDecl-Variable"); !ok {
 		return false, err
 	}
 	if ok, err := p.IdentType(); !ok {
@@ -151,7 +152,7 @@ func (p *Parser) VarDecl() (bool, *ParseError) {
 }
 
 func (p *Parser) ConstDecl() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.KW_Constant, "ConstDecl-Constant"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_Constant, "ConstDecl-Constant"); !ok {
 		return false, err
 	}
 	if ok, err := p.IdentType(); !ok {
@@ -164,10 +165,10 @@ func (p *Parser) ConstDecl() (bool, *ParseError) {
 }
 
 func (p *Parser) IdentType() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.ItemIdent, "IdentType-Ident"); !ok {
+	if ok, err, _ := p.expectToken(lexer.ItemIdent, "IdentType-Ident"); !ok {
 		return false, err
 	}
-	if ok, err := p.expectToken(lexer.KW_Is, "IdentType-Is"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_Is, "IdentType-Is"); !ok {
 		return false, err
 	}
 	if ok, err := p.TypeName(); !ok {
@@ -182,18 +183,18 @@ func (p *Parser) TypeName() (bool, *ParseError) {
 	case lexer.TN_Number, lexer.TN_String, lexer.TN_Boolean:
 		return true, nil
 	case lexer.TN_List:
-		if ok, err := p.expectToken(lexer.KW_Of, "TypeName-ListOf"); !ok {
+		if ok, err, _ := p.expectToken(lexer.KW_Of, "TypeName-ListOf"); !ok {
 			return false, err
 		}
 		return p.TypeName()
 	case lexer.TN_Map:
-		if ok, err := p.expectToken(lexer.KW_Of, "TypeName-MapOfKey"); !ok {
+		if ok, err, _ := p.expectToken(lexer.KW_Of, "TypeName-MapOfKey"); !ok {
 			return false, err
 		}
 		if ok, err := p.TypeName(); !ok {
 			return false, err.addRule("TypeName-MapKey")
 		}
-		if ok, err := p.expectToken(lexer.KW_To, "TypeName-MapToValue"); !ok {
+		if ok, err, _ := p.expectToken(lexer.KW_To, "TypeName-MapToValue"); !ok {
 			return false, err
 		}
 		return p.TypeName()
@@ -207,11 +208,14 @@ func (p *Parser) TypeName() (bool, *ParseError) {
 func (p *Parser) Value() (bool, *ParseError) {
 	switch p.peekToken().TokType {
 	case lexer.LT_Number:
-		return p.NumberLiteral()
+		ok, err, _ := p.NumberLiteral()
+		return ok, err
 	case lexer.LT_Boolean:
-		return p.BooleanLiteral()
+		ok, err, _ := p.BooleanLiteral()
+		return ok, err
 	case lexer.LT_String:
-		return p.StringLiteral()
+		ok, err, _ := p.StringLiteral()
+		return ok, err
 	case lexer.KW_Containing:
 		return p.ListLiteral()
 	default:
@@ -219,35 +223,38 @@ func (p *Parser) Value() (bool, *ParseError) {
 	}
 }
 
-func (p *Parser) NumberLiteral() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.LT_Number, "NumberLiteral"); !ok {
-		return false, err
+func (p *Parser) NumberLiteral() (bool, *ParseError, *ast.NumberLiteral) {
+	if ok, err, token := p.expectToken(lexer.LT_Number, "NumberLiteral"); !ok {
+		return false, err, nil
+	} else {
+		return true, nil, &ast.NumberLiteral{TokItem: token}
 	}
-	return true, nil
 }
 
-func (p *Parser) BooleanLiteral() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.LT_Boolean, "BooleanLiteral"); !ok {
-		return false, err
+func (p *Parser) BooleanLiteral() (bool, *ParseError, *ast.BooleanLiteral) {
+	if ok, err, token := p.expectToken(lexer.LT_Boolean, "BooleanLiteral"); !ok {
+		return false, err, nil
+	} else {
+		return true, nil, &ast.BooleanLiteral{TokItem: token}
 	}
-	return true, nil
 }
 
-func (p *Parser) StringLiteral() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.LT_String, "StringLiteral"); !ok {
-		return false, err
+func (p *Parser) StringLiteral() (bool, *ParseError, *ast.StringLiteral) {
+	if ok, err, token := p.expectToken(lexer.LT_String, "StringLiteral"); !ok {
+		return false, err, nil
+	} else {
+		return true, nil, &ast.StringLiteral{TokItem: token}
 	}
-	return true, nil
 }
 
 func (p *Parser) ListLiteral() (bool, *ParseError) {
-	if ok, err := p.expectToken(lexer.KW_Containing, "ListLiteral-Containing"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_Containing, "ListLiteral-Containing"); !ok {
 		return false, err
 	}
 	element := p.peekToken()
 	if element.TokType == lexer.LT_Nothing {
 		p.getNextToken() // consume `nothing`
-		if ok, err := p.expectToken(lexer.KW_Done, "ListLiteral-NothingDone"); !ok {
+		if ok, err, _ := p.expectToken(lexer.KW_Done, "ListLiteral-NothingDone"); !ok {
 			return false, err
 		}
 		return true, nil
@@ -255,7 +262,7 @@ func (p *Parser) ListLiteral() (bool, *ParseError) {
 	if ok, err := p.ListElements(); !ok {
 		return false, err.addRule("ListLiteral")
 	}
-	if ok, err := p.expectToken(lexer.KW_Done, "ListLiteral-SomethingDone"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_Done, "ListLiteral-SomethingDone"); !ok {
 		return false, err
 	}
 	return true, nil
@@ -265,7 +272,7 @@ func (p *Parser) ListElements() (bool, *ParseError) {
 	if ok, err := p.ListValue(); !ok {
 		return false, err.addRule("ListElements-One")
 	}
-	if ok, err := p.expectToken(lexer.OP_Comma, "ListElements-OneComma"); !ok {
+	if ok, err, _ := p.expectToken(lexer.OP_Comma, "ListElements-OneComma"); !ok {
 		return false, err
 	}
 	if p.peekToken().TokType == lexer.KW_Done {
@@ -280,7 +287,7 @@ func (p *Parser) ListElements() (bool, *ParseError) {
 		if ok, err := p.ListValue(); !ok {
 			return false, err.addRule("ListElements-MoreThan1")
 		}
-		if ok, err := p.expectToken(lexer.OP_Comma, "ListElements-TwoComma"); !ok {
+		if ok, err, _ := p.expectToken(lexer.OP_Comma, "ListElements-TwoComma"); !ok {
 			return false, err
 		}
 	}
@@ -288,7 +295,7 @@ func (p *Parser) ListElements() (bool, *ParseError) {
 		// last element
 		return false, err.addRule("ListElements-LastElement")
 	}
-	if ok, err := p.expectToken(lexer.OP_Comma, "ListElements-LastComma"); !ok {
+	if ok, err, _ := p.expectToken(lexer.OP_Comma, "ListElements-LastComma"); !ok {
 		return false, err
 	}
 	return true, nil
@@ -297,11 +304,14 @@ func (p *Parser) ListElements() (bool, *ParseError) {
 func (p *Parser) ListValue() (bool, *ParseError) {
 	switch p.peekToken().TokType {
 	case lexer.LT_Number:
-		return p.NumberLiteral()
+		ok, err, _ := p.NumberLiteral()
+		return ok, err
 	case lexer.LT_Boolean:
-		return p.BooleanLiteral()
+		ok, err, _ := p.BooleanLiteral()
+		return ok, err
 	case lexer.LT_String:
-		return p.StringLiteral()
+		ok, err, _ := p.StringLiteral()
+		return ok, err
 	case lexer.ItemIdent:
 		return true, nil
 	case lexer.KW_From, lexer.KW_Every:
@@ -319,13 +329,13 @@ func (p *Parser) RangeLiteral() (bool, *ParseError) {
 			return false, err.addRule("RangeLiteral-EveryNth")
 		}
 	}
-	if ok, err := p.expectToken(lexer.KW_From, "RangeLiteral-From"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_From, "RangeLiteral-From"); !ok {
 		return false, err
 	}
 	if ok, err := p.RangeStart(); !ok {
 		return false, err.addRule("RangeLiteral-Start")
 	}
-	if ok, err := p.expectToken(lexer.KW_To, "RangeLiteral-To"); !ok {
+	if ok, err, _ := p.expectToken(lexer.KW_To, "RangeLiteral-To"); !ok {
 		return false, err
 	}
 	if ok, err := p.RangeEnd(); !ok {
@@ -366,7 +376,8 @@ func (p *Parser) Number() (bool, *ParseError) {
 		return p.Ident()
 	}
 	if ok, _ := p.maybeToken(lexer.LT_Number, "Number-NumberLiteral"); ok {
-		return p.NumberLiteral()
+		ok, err, _ := p.NumberLiteral()
+		return ok, err
 	}
 	return false, NewParseError("Expected number", *p.lastToken, "Number")
 }
@@ -375,10 +386,29 @@ func (p *Parser) Nth() (bool, *ParseError) {
 	if ok, err := p.Number(); !ok {
 		return false, err.addRule("Nth-Number")
 	}
-	return p.expectToken(lexer.KW_Th, "Nth-Th")
-	// th := p.getNextToken()
-	// if th.TokType != lexer.KW_Th {
-	// 	return false, NewParseError("Expected `-th` for ordinal", th, "Nth-th")
-	// }
-	// return true, nil
+	ok, err, _ := p.expectToken(lexer.KW_Th, "Nth-Th")
+	return ok, err
+}
+
+func (p *Parser) FunctionCall() (bool, *ParseError) {
+	call := ast.FunctionCall{}
+	if ok, err, _ := p.expectToken(lexer.KW_Do, "FunctionCall-Do"); !ok {
+		return false, err
+	}
+	if ok, err, funcname := p.expectToken(lexer.ItemIdent, "FunctionCall-FuncName"); !ok {
+		return false, err
+	} else {
+		call.FunctionName = *funcname
+	}
+	if ok, err, _ := p.expectToken(lexer.KW_To, "FunctionCall-To"); !ok {
+		return false, err
+	}
+	// TODO: Change to values
+	if ok, err, tok := p.NumberLiteral(); !ok {
+		return false, err.addRule("FunctionCall-Parameter1")
+	} else {
+		call.Parameters = append(call.Parameters, tok.TokItem)
+	}
+	call.Evaluate()
+	return true, nil
 }

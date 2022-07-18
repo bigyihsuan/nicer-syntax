@@ -1,10 +1,11 @@
 # TODO
 
-## Parser
-
-- [ ] Ranges
-- [ ] List literals with ranges
-- [ ] List literals with primitives and ranges
+- [x] List literals with ranges
+- [x] List literals with primitives and ranges
+- [ ] Function Calling
+- [ ] Basic AST
+- [ ] PrintLine/Print, Evaluation
+- [ ] Function Definition
 - [ ] Maps
 - [ ] Map literals with primitves
 - [ ] Struct defs with fields
@@ -15,5 +16,6 @@
 - [ ] Function definition
 - [ ] Function calling
 - [ ] Struct Methods
+- [ ] For Ranges
 
 more...?

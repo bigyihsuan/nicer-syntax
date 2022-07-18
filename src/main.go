@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"nicer-syntax/src/lexer"
-	"nicer-syntax/src/parser"
+	"nicer-syntax/lexer"
+	"nicer-syntax/parser"
 	"os"
 
 	"github.com/db47h/lex"
@@ -30,7 +30,7 @@ func main() {
 	// 	"every 2-th from start to end",
 	// 	"every Skip-th from start to end",
 	// }
-	// text = []byte(s)
+	text = []byte("do PrintLine to 10")
 	fmt.Println(string(text))
 	byteReader := bytes.NewBuffer(text)
 	file := lex.NewFile(filename, byteReader)
@@ -42,7 +42,7 @@ func main() {
 	// }
 
 	p := parser.NewParser(tokens)
-	result, err := p.Parse()
+	result, err := p.FunctionCall()
 	fmt.Printf("result: %v\n", result)
 	fmt.Printf("%v\n", err)
 }

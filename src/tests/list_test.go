@@ -3,14 +3,14 @@ package tests
 import (
 	"bytes"
 	"fmt"
-	"nicer-syntax/src/lexer"
-	"nicer-syntax/src/parser"
+	"nicer-syntax/lexer"
+	"nicer-syntax/parser"
 	"testing"
 
 	"github.com/db47h/lex"
 )
 
-func TestListLiteral(t *testing.T) {
+func TestParseListLiteral(t *testing.T) {
 	literals := []TestCase{
 		{"containing nothing done", true},
 		{"containing 0, done", true},

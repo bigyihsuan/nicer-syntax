@@ -3,8 +3,8 @@ package tests
 import (
 	"bytes"
 	"fmt"
-	"nicer-syntax/src/lexer"
-	"nicer-syntax/src/parser"
+	"nicer-syntax/lexer"
+	"nicer-syntax/parser"
 
 	"github.com/db47h/lex"
 )

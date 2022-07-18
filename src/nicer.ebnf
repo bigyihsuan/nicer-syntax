@@ -26,3 +26,6 @@ RangeEnd = "end" | Number ;
 Nth = Number "-th" ;
 
 RangeIteration = ["every" Nth] "from" RangeStart "to" RangeEnd "of" ident;
+
+FunctionCall = "do" ident ["to" Value] ;
+FunctionParameters = Value "," [{Value ","} "and" Value] ;

@@ -201,13 +201,13 @@ var TokenString = map[lex.Token]string{
 }
 
 type TokItem struct {
-	TokType  lex.Token
-	TokName  string
-	Position int
-	Value    interface{}
+	TokType     lex.Token
+	TokName     string
+	TokPosition int
+	TokValue    interface{}
 }
 
 // for String() string
 func (ti TokItem) String() string {
-	return fmt.Sprintf("{%s @ %v: %#v}", ti.TokName, ti.Position, ti.Value)
+	return fmt.Sprintf("{%s @ %v: %#v}", ti.TokName, ti.TokPosition, ti.TokValue)
 }

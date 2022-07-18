@@ -18,6 +18,7 @@
 * Explicit im/mutability
 * Types
   * Number
+  * Boolean
   * String
   * List
   * Map
