@@ -1,63 +1,122 @@
 package ast
 
 import (
+	"fmt"
 	"math/big"
-	"nicer-syntax/evaluator"
 	"nicer-syntax/lexer"
 	"strconv"
 )
 
-type Primitive interface {
+/* THINGS THAT RETURN VALUES
+- Literals (number, boolean, string, list, map, struct)
+- Ranges (List of Numbers)
+- Expressions
+- Functions
+*/
+
+type ParseTree struct {
+	left, right Visitable
+}
+
+// for Visitable interface
+func (pt ParseTree) Visit(v Visitor) {
+	if pt.left != nil {
+		fmt.Printf("pt.left: %v\n", pt.left)
+		pt.left.Accept(v)
+	}
+	if pt.right != nil {
+		fmt.Printf("pt.right: %v\n", pt.right)
+		pt.right.Accept(v)
+	}
+}
+
+type Program struct {
+	ParseTree
+}
+
+type VariableAssignment struct {
+	ParseTree
+	// left = identifier
+	// right = value
 }
 
 type NumberLiteral struct {
-	*lexer.TokItem
+	Value float64
 }
 
-func (lit NumberLiteral) Evaluate() *evaluator.NicerValue {
+func NewNumberLiteral(tok lexer.TokItem) *NumberLiteral {
+	nl := NumberLiteral{}
 	var f float64
-	switch l := lit.TokValue; l.(type) {
+	switch l := tok.TokValue; l.(type) {
 	case *big.Int:
 		f, _ = new(big.Float).SetInt(l.(*big.Int)).Float64()
 	case *big.Float:
 		f, _ = l.(*big.Float).Float64()
 	}
-	return &evaluator.NicerValue{Value: f}
+	nl.Value = f
+	return &nl
+}
+
+func (nl NumberLiteral) Accept(v Visitor) {
+	v.VisitNumberLiteral(v, &nl)
 }
 
 type BooleanLiteral struct {
-	*lexer.TokItem
+	Value bool
 }
 
-func (lit BooleanLiteral) Evaluate() *evaluator.NicerValue {
-	b, err := strconv.ParseBool(lit.TokValue.(string))
+func NewBooleanLiteral(tok lexer.TokItem) *BooleanLiteral {
+	b, err := strconv.ParseBool(tok.TokValue.(string))
 	if err != nil {
-		panic(err)
-	} else {
-		return &evaluator.NicerValue{Value: b}
+		b = false
 	}
+	return &BooleanLiteral{Value: b}
+}
+
+func (bl BooleanLiteral) Accept(v Visitor) {
+	v.VisitBooleanLiteral(v, &bl)
 }
 
 type StringLiteral struct {
-	*lexer.TokItem
+	Value string
 }
 
-func (lit StringLiteral) Evaluate() *evaluator.NicerValue {
-	return &evaluator.NicerValue{Value: lit.TokValue.(string)}
+func NewStringLiteral(tok lexer.TokItem) *StringLiteral {
+	return &StringLiteral{Value: tok.TokValue.(string)}
+}
+
+func (sl StringLiteral) Accept(v Visitor) {
+	v.VisitStringLiteral(v, &sl)
+}
+
+type Identifier struct {
+	Name string
+}
+
+func NewIdentifier(tok lexer.TokItem) *Identifier {
+	return &Identifier{tok.TokValue.(string)}
+}
+
+func (id Identifier) Accept(v Visitor) {
+	v.VisitIdentifier(v, &id)
 }
 
 type FunctionCall struct {
-	FunctionName lexer.TokItem
-	// TODO: Proper Expr
-	Parameters []evaluator.Evaluable
+	FuncName   *Identifier
+	FuncParams Visitable
 }
 
-func (fc FunctionCall) Evaluate() *evaluator.NicerValue {
-	funcname := fc.FunctionName.TokValue.(string)
-	if fun, ok := BuiltInFunctions[funcname]; ok {
-		return fun(fc.Parameters)
-	} else {
-		// TODO: User-defined functions
-		return nil
+// TODO: Actual comma-separated list of expr
+func NewFunctionCall(name lexer.TokItem, parameters Visitable) *FunctionCall {
+	return &FunctionCall{
+		FuncName:   NewIdentifier(name),
+		FuncParams: parameters,
 	}
+}
+
+func (fc FunctionCall) Accept(v Visitor) {
+	v.VisitFunctionCall(v, &fc)
+}
+
+type CommaSeparatedList struct {
 }

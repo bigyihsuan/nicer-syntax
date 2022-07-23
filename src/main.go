@@ -30,8 +30,8 @@ func main() {
 	// 	"every 2-th from start to end",
 	// 	"every Skip-th from start to end",
 	// }
-	text = []byte("do PrintLine to 10")
-	fmt.Println(string(text))
+	// text = []byte("do PrintLine to 10")
+	// fmt.Println(string(text))
 	byteReader := bytes.NewBuffer(text)
 	file := lex.NewFile(filename, byteReader)
 	fmt.Println(file.Name())
@@ -42,7 +42,8 @@ func main() {
 	// }
 
 	p := parser.NewParser(tokens)
-	result, err := p.FunctionCall()
+	result, err, _ := p.Parse()
 	fmt.Printf("result: %v\n", result)
 	fmt.Printf("%v\n", err)
+	// ast.Evaluate()
 }

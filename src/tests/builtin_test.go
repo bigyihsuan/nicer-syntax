@@ -2,6 +2,8 @@ package tests
 
 import (
 	"bytes"
+	"fmt"
+	"nicer-syntax/ast"
 	"nicer-syntax/lexer"
 	"nicer-syntax/parser"
 	"testing"
@@ -31,7 +33,10 @@ func TestEvalPrintFuncs(t *testing.T) {
 		if err != nil && print.shouldSucceed {
 			t.Errorf("failed `%v`, got %v", print.input, err)
 		} else if ok {
-			funccall.Evaluate()
+			var visitor ast.StringVisitor
+			funccall.Accept(&visitor)
+			fmt.Println(visitor)
+			fmt.Println()
 		}
 	}
 }

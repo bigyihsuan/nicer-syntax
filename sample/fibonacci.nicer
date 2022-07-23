@@ -1,8 +1,8 @@
-function Fibonacci is function, taking number N, and returning number, does
+function Fibonacci is function, taking number N, and returning number, doing
     variable Previous is number 0
     variable Current is number 1
 
-    for number I from 0 to N, do
+    for number I from 0 to N, loop
         variable Old is number
         Old is Previous
         Previous is Current
@@ -11,7 +11,7 @@ function Fibonacci is function, taking number N, and returning number, does
     return Old
 done
 
-function RecursiveFibonacci is function, taking number N, and returning number, does
+function RecursiveFibonacci is function, taking number N, and returning number, doing
     if N <= 0, then
         return 0
     done
@@ -23,7 +23,7 @@ done
 
 function Main is function, taking list of string Argv, does
     variable Number is number
-    Number is do ToNumber to 1-th from Argv
-    do PrintLine of (Fibonacci of Number)
-    do PrintLine of (RecursiveFibonacci of Number)
+    Number is (do ToNumber to 1-th from Argv)
+    do PrintLine to (do Fibonacci to Number)
+    do PrintLine to (do RecursiveFibonacci to Number)
 done

@@ -2,7 +2,7 @@
 
 - [x] List literals with ranges
 - [x] List literals with primitives and ranges
-- [ ] Function Calling
+- [x] Function Calling
 - [ ] Basic AST
 - [ ] PrintLine/Print, Evaluation
 - [ ] Function Definition

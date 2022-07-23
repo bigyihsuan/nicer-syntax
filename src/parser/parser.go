@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"nicer-syntax/ast"
-	"nicer-syntax/evaluator"
 	"nicer-syntax/lexer"
 
 	"github.com/db47h/lex"
@@ -224,17 +223,14 @@ func (p *Parser) Value() (bool, *ParseError) {
 	}
 }
 
-func (p *Parser) PrimitiveLiteral() (bool, *ParseError, evaluator.Evaluable) {
+func (p *Parser) PrimitiveLiteral() (bool, *ParseError, ast.Visitable) {
 	switch p.peekToken().TokType {
 	case lexer.LT_Number:
-		ok, err, lit := p.NumberLiteral()
-		return ok, err, lit
+		return p.NumberLiteral()
 	case lexer.LT_Boolean:
-		ok, err, lit := p.BooleanLiteral()
-		return ok, err, lit
+		return p.BooleanLiteral()
 	case lexer.LT_String:
-		ok, err, lit := p.StringLiteral()
-		return ok, err, lit
+		return p.StringLiteral()
 	default:
 		return false, NewParseError("Expected primitive literal", *p.peekToken(), "PrimitiveLiteral"), nil
 	}
@@ -244,7 +240,7 @@ func (p *Parser) NumberLiteral() (bool, *ParseError, *ast.NumberLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_Number, "NumberLiteral"); !ok {
 		return false, err, nil
 	} else {
-		return true, nil, &ast.NumberLiteral{TokItem: token}
+		return true, nil, ast.NewNumberLiteral(*token)
 	}
 }
 
@@ -252,7 +248,7 @@ func (p *Parser) BooleanLiteral() (bool, *ParseError, *ast.BooleanLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_Boolean, "BooleanLiteral"); !ok {
 		return false, err, nil
 	} else {
-		return true, nil, &ast.BooleanLiteral{TokItem: token}
+		return true, nil, ast.NewBooleanLiteral(*token)
 	}
 }
 
@@ -260,7 +256,7 @@ func (p *Parser) StringLiteral() (bool, *ParseError, *ast.StringLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_String, "StringLiteral"); !ok {
 		return false, err, nil
 	} else {
-		return true, nil, &ast.StringLiteral{TokItem: token}
+		return true, nil, ast.NewStringLiteral(*token)
 	}
 }
 
@@ -419,7 +415,7 @@ func (p *Parser) FunctionCall() (bool, *ParseError, *ast.FunctionCall) {
 	if ok, err, funcname := p.expectToken(lexer.ItemIdent, "FunctionCall-FuncName"); !ok {
 		return false, err, nil
 	} else {
-		call.FunctionName = *funcname
+		call.FuncName = ast.NewIdentifier(*funcname)
 	}
 	if ok, err, _ := p.expectToken(lexer.KW_To, "FunctionCall-To"); !ok {
 		return false, err, nil
@@ -428,7 +424,7 @@ func (p *Parser) FunctionCall() (bool, *ParseError, *ast.FunctionCall) {
 	if ok, err, primitive := p.PrimitiveLiteral(); !ok {
 		return false, err.addRule("FunctionCall-Parameter1"), nil
 	} else {
-		call.Parameters = append(call.Parameters, primitive)
+		call.FuncParams = primitive
 	}
 	return true, nil, &call
 }

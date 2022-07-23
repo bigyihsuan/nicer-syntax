@@ -2,7 +2,7 @@ package tests
 
 import (
 	"bytes"
-	"fmt"
+	"nicer-syntax/ast"
 	"nicer-syntax/lexer"
 	"nicer-syntax/parser"
 	"testing"
@@ -107,7 +107,8 @@ func TestEvalNumbers(t *testing.T) {
 		if err != nil && number.shouldSucceed {
 			t.Errorf("failed parsing %v, got %v", number, err)
 		} else if ok {
-			fmt.Println(numlit.Evaluate())
+			var visitor ast.StringVisitor
+			numlit.Accept(&visitor)
 		}
 	}
 }
@@ -130,7 +131,8 @@ func TestEvalBooleans(t *testing.T) {
 		if err != nil && boolean.shouldSucceed {
 			t.Errorf("failed parsing %v, got %v", boolean, err)
 		} else if ok {
-			fmt.Println(boollit.Evaluate())
+			var visitor ast.StringVisitor
+			boollit.Accept(&visitor)
 		}
 	}
 }
@@ -159,7 +161,8 @@ fail"`, false},
 		if err != nil && str.shouldSucceed {
 			t.Errorf("failed parsing %v, got %v", str, err)
 		} else if ok {
-			fmt.Println(strlit.Evaluate())
+			var visitor ast.StringVisitor
+			strlit.Accept(&visitor)
 		}
 	}
 }
