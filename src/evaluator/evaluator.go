@@ -1,10 +1,12 @@
 package evaluator
 
 type Evaluable interface {
-	Evaluate()
+	Evaluate() *NicerValue
 }
 
 type NicerValue struct {
+	Type  NicerType
+	Value interface{}
 }
 
 type NicerType string

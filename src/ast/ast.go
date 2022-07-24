@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"fmt"
 	"math/big"
+	"nicer-syntax/evaluator"
 	"nicer-syntax/lexer"
 	"strconv"
 )
@@ -14,37 +14,34 @@ import (
 - Functions
 */
 
-type ParseTree struct {
-	left, right Visitable
-}
+// type ParseTree struct {
+// 	left, right Visitable
+// }
 
-// for Visitable interface
-func (pt ParseTree) Visit(v Visitor) {
-	if pt.left != nil {
-		fmt.Printf("pt.left: %v\n", pt.left)
-		pt.left.Accept(v)
-	}
-	if pt.right != nil {
-		fmt.Printf("pt.right: %v\n", pt.right)
-		pt.right.Accept(v)
-	}
-}
+// // for Visitable interface
+// func (pt ParseTree) Visit(v Visitor) {
+// 	if pt.left != nil {
+// 		fmt.Printf("pt.left: %v\n", pt.left)
+// 		pt.left.Accept(v)
+// 	}
+// 	if pt.right != nil {
+// 		fmt.Printf("pt.right: %v\n", pt.right)
+// 		pt.right.Accept(v)
+// 	}
+// }
 
-type Program struct {
-	ParseTree
-}
+// type Program struct {
+// 	ParseTree
+// }
 
-type VariableAssignment struct {
-	ParseTree
-	// left = identifier
-	// right = value
-}
+type HasValue interface{}
 
 type NumberLiteral struct {
+	HasValue
 	Value float64
 }
 
-func NewNumberLiteral(tok lexer.TokItem) *NumberLiteral {
+func NewNumberLiteral(tok *lexer.TokItem) *NumberLiteral {
 	nl := NumberLiteral{}
 	var f float64
 	switch l := tok.TokValue; l.(type) {
@@ -57,15 +54,25 @@ func NewNumberLiteral(tok lexer.TokItem) *NumberLiteral {
 	return &nl
 }
 
+// ast.Visitable
 func (nl NumberLiteral) Accept(v Visitor) {
 	v.VisitNumberLiteral(v, &nl)
 }
 
+// evaluator.Evaluable
+func (nl NumberLiteral) Evaluate() *evaluator.NicerValue {
+	return &evaluator.NicerValue{
+		Type:  evaluator.NT_number,
+		Value: nl.Value,
+	}
+}
+
 type BooleanLiteral struct {
+	HasValue
 	Value bool
 }
 
-func NewBooleanLiteral(tok lexer.TokItem) *BooleanLiteral {
+func NewBooleanLiteral(tok *lexer.TokItem) *BooleanLiteral {
 	b, err := strconv.ParseBool(tok.TokValue.(string))
 	if err != nil {
 		b = false
@@ -73,30 +80,53 @@ func NewBooleanLiteral(tok lexer.TokItem) *BooleanLiteral {
 	return &BooleanLiteral{Value: b}
 }
 
+// ast.Visitable
 func (bl BooleanLiteral) Accept(v Visitor) {
 	v.VisitBooleanLiteral(v, &bl)
 }
 
+// evaluator.Evaluable
+func (bl BooleanLiteral) Evaluate() *evaluator.NicerValue {
+	return &evaluator.NicerValue{
+		Type:  evaluator.NT_boolean,
+		Value: bl.Value,
+	}
+}
+
 type StringLiteral struct {
+	HasValue
 	Value string
 }
 
-func NewStringLiteral(tok lexer.TokItem) *StringLiteral {
+func NewStringLiteral(tok *lexer.TokItem) *StringLiteral {
 	return &StringLiteral{Value: tok.TokValue.(string)}
 }
 
+// ast.Visitable
 func (sl StringLiteral) Accept(v Visitor) {
 	v.VisitStringLiteral(v, &sl)
 }
 
+// evaluator.Evaluable
+func (sl StringLiteral) Evaluate() *evaluator.NicerValue {
+	return &evaluator.NicerValue{
+		Type:  evaluator.NT_string,
+		Value: sl.Value,
+	}
+}
+
 type Identifier struct {
+	HasValue
 	Name string
 }
 
-func NewIdentifier(tok lexer.TokItem) *Identifier {
-	return &Identifier{tok.TokValue.(string)}
+func NewIdentifier(tok *lexer.TokItem) *Identifier {
+	ident := &Identifier{}
+	ident.Name = tok.TokValue.(string)
+	return ident
 }
 
+// ast.Visitable
 func (id Identifier) Accept(v Visitor) {
 	v.VisitIdentifier(v, &id)
 }
@@ -107,16 +137,73 @@ type FunctionCall struct {
 }
 
 // TODO: Actual comma-separated list of expr
-func NewFunctionCall(name lexer.TokItem, parameters Visitable) *FunctionCall {
+func NewFunctionCall(name *lexer.TokItem, parameters Visitable) *FunctionCall {
 	return &FunctionCall{
 		FuncName:   NewIdentifier(name),
 		FuncParams: parameters,
 	}
 }
 
+// ast.Visitable
 func (fc FunctionCall) Accept(v Visitor) {
 	v.VisitFunctionCall(v, &fc)
 }
 
-type CommaSeparatedList struct {
+// type CommaSeparatedList struct {
+// }
+
+type Statement interface{}
+
+type Declaration interface {
+	Statement
+}
+
+type VarAssignment struct {
+	Statement
+}
+
+func NewVarAssignment(varName *Identifier, val Visitable) *VarAssignment {
+	varass := new(VarAssignment)
+	// varass.Name = varName
+	// varass.Value = val
+	return varass
+}
+
+type VarDecl struct {
+	Declaration
+	VarName  *Identifier
+	TypeName *Identifier
+	Value    Visitable // TODO: Expr
+}
+
+// ast.Visitable
+func (vd VarDecl) Accept(v Visitor) {
+	v.VisitVarDecl(v, &vd)
+}
+func NewVarDecl(name, typeName *Identifier, value Visitable) *VarDecl {
+	return &VarDecl{
+		VarName:  name,
+		TypeName: typeName,
+		Value:    value,
+	}
+}
+
+type ConstDecl struct {
+	Declaration
+	ConstName *Identifier
+	TypeName  *Identifier
+	Value     Visitable // TODO: Expr
+}
+
+func NewConstDecl(name, typeName *Identifier, value Visitable) *ConstDecl {
+	return &ConstDecl{
+		ConstName: name,
+		TypeName:  typeName,
+		Value:     value,
+	}
+}
+
+// ast.Visitable
+func (cd ConstDecl) Accept(v Visitor) {
+	v.VisitConstDecl(v, &cd)
 }

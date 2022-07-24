@@ -11,14 +11,13 @@ import (
 	"github.com/db47h/lex"
 )
 
-func TestEvalPrintFuncs(t *testing.T) {
+func TestConstants(t *testing.T) {
 	tests := []TestCase{
-		{`do Print to 123.456`, true},
-		{`do Print to true`, true},
-		{`do Print to "Hello, World!"`, true},
-		{`do PrintLine to 123.456`, true},
-		{`do PrintLine to true`, true},
-		{`do PrintLine to "Hello, World!"`, true},
+		{`constant ConstNumber is number 10`, true},
+		{`constant Hello is string "hello world!"`, true},
+		{`constant ThisIsNotTrue is boolean false`, true},
+		{`constant MissingValue is number`, false},
+		{`constant MissingType is 232`, false},
 	}
 	for _, print := range tests {
 		text := []byte(print.input)
@@ -29,15 +28,15 @@ func TestEvalPrintFuncs(t *testing.T) {
 
 		p := parser.NewParser(tokens)
 		var err *parser.ParseError
-		ok, err, funccall := p.FunctionCall()
+		ok, err, constdecl := p.ConstDecl()
 		if err != nil && print.shouldSucceed {
 			t.Errorf("failed `%v`, got %v", print.input, err)
 		} else if ok {
 			var stringVisitor ast.StringVisitor
-			funccall.Accept(&stringVisitor)
+			constdecl.Accept(&stringVisitor)
 			fmt.Println(stringVisitor)
-			var evaluatingVisitor ast.EvaluatingVisitor
-			funccall.Accept(&evaluatingVisitor)
+			var evaluatingVisitor = ast.NewEvaluatingVisitor()
+			constdecl.Accept(evaluatingVisitor)
 			fmt.Println()
 		}
 	}

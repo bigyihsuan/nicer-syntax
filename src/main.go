@@ -42,8 +42,9 @@ func main() {
 	// }
 
 	p := parser.NewParser(tokens)
-	result, err, _ := p.Parse()
+	result, err := p.Parse()
 	fmt.Printf("result: %v\n", result)
 	fmt.Printf("%v\n", err)
 	// ast.Evaluate()
+
 }

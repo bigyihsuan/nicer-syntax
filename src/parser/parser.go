@@ -99,7 +99,7 @@ func (p *Parser) Parse() (bool, *ParseError) {
 }
 
 func (p *Parser) Program() (bool, *ParseError) {
-	if ok, err := p.Stmt(); !ok {
+	if ok, err, _ := p.Stmt(); !ok {
 		return false, err.addRule("Program-Stmt")
 	}
 	if ok, err, _ := p.expectToken(lexer.ItemSemicolon, "Program"); !ok {
@@ -108,7 +108,7 @@ func (p *Parser) Program() (bool, *ParseError) {
 	return true, nil
 }
 
-func (p *Parser) Stmt() (bool, *ParseError) {
+func (p *Parser) Stmt() (bool, *ParseError, ast.Statement) {
 	if p.peekToken().TokType == lexer.ItemIdent {
 		return p.IdentAssignment()
 	} else {
@@ -116,110 +116,121 @@ func (p *Parser) Stmt() (bool, *ParseError) {
 	}
 }
 
-func (p *Parser) IdentAssignment() (bool, *ParseError) {
-	if ok, err := p.Ident(); !ok {
-		return false, err.addRule("IdentAssignment-Ident")
+func (p *Parser) IdentAssignment() (bool, *ParseError, *ast.VarAssignment) {
+	ok, err, name := p.Ident()
+	if !ok {
+		return false, err.addRule("IdentAssignment-Ident"), nil
 	}
 	if ok, err, _ := p.expectToken(lexer.KW_Is, "IdentAssignment-Is"); !ok {
-		return false, err
+		return false, err, nil
 	}
-	return p.Value()
+	ok, err, val := p.Value()
+	return ok, err, ast.NewVarAssignment(name, val)
 }
 
-func (p *Parser) IdentDeclaration() (bool, *ParseError) {
+func (p *Parser) IdentDeclaration() (bool, *ParseError, ast.Declaration) {
 	switch p.peekToken().TokType {
 	case lexer.KW_Constant:
 		return p.ConstDecl()
 	case lexer.KW_Variable:
 		return p.VarDecl()
 	default:
-		return false, NewParseError("Invalid token", *p.peekToken(), "IdentDeclaration")
+		return false, NewParseError("Invalid token", *p.peekToken(), "IdentDeclaration"), nil
 	}
 }
 
-func (p *Parser) VarDecl() (bool, *ParseError) {
-	if ok, err, _ := p.expectToken(lexer.KW_Variable, "VarDecl-Variable"); !ok {
-		return false, err
+func (p *Parser) VarDecl() (bool, *ParseError, *ast.VarDecl) {
+	ok, err, _ := p.expectToken(lexer.KW_Variable, "VarDecl-Variable")
+	if !ok {
+		return false, err, nil
 	}
-	if ok, err := p.IdentType(); !ok {
-		return false, err.addRule("VarDecl-IdentType")
+	ok, err, name, typeName := p.IdentType()
+	if !ok {
+		return false, err.addRule("VarDecl-IdentType"), nil
 	}
 	// optional value, ended with semicolon
 	if p.peekToken().TokType == lexer.ItemSemicolon {
-		return true, nil
+		return true, nil, ast.NewVarDecl(name, typeName, nil)
 	}
-	return p.Value()
+	ok, err, val := p.Value()
+	return ok, err, ast.NewVarDecl(name, typeName, val)
 }
 
-func (p *Parser) ConstDecl() (bool, *ParseError) {
+func (p *Parser) ConstDecl() (bool, *ParseError, *ast.ConstDecl) {
 	if ok, err, _ := p.expectToken(lexer.KW_Constant, "ConstDecl-Constant"); !ok {
-		return false, err
+		return false, err, nil
 	}
-	if ok, err := p.IdentType(); !ok {
-		return false, err.addRule("ConstDecl-IdentType")
+	ok, err, name, typeName := p.IdentType()
+	if !ok {
+		return false, err.addRule("ConstDecl-IdentType"), nil
 	}
-	if ok, err := p.Value(); !ok {
-		return false, err.addRule("ConstDecl-Value")
+	ok, err, val := p.Value()
+	if !ok {
+		return false, err.addRule("ConstDecl-Value"), nil
 	}
-	return true, nil
+	return true, nil, ast.NewConstDecl(name, typeName, val)
 }
 
-func (p *Parser) IdentType() (bool, *ParseError) {
-	if ok, err, _ := p.expectToken(lexer.ItemIdent, "IdentType-Ident"); !ok {
-		return false, err
+func (p *Parser) IdentType() (bool, *ParseError, *ast.Identifier, *ast.Identifier) {
+	ok, err, name := p.expectToken(lexer.ItemIdent, "IdentType-Ident")
+	if !ok {
+		return false, err, nil, nil
 	}
 	if ok, err, _ := p.expectToken(lexer.KW_Is, "IdentType-Is"); !ok {
-		return false, err
+		return false, err, nil, nil
 	}
-	if ok, err := p.TypeName(); !ok {
-		return false, err.addRule("IdentType-TypeName")
+	ok, err, typeName := p.TypeName()
+	if !ok {
+		return false, err.addRule("IdentType-TypeName"), nil, nil
 	}
-	return true, nil
+	return true, nil, ast.NewIdentifier(name), typeName
 }
 
-func (p *Parser) TypeName() (bool, *ParseError) {
+func (p *Parser) TypeName() (bool, *ParseError, *ast.Identifier) {
 	typeName := p.getNextToken()
 	switch typeName.TokType {
 	case lexer.TN_Number, lexer.TN_String, lexer.TN_Boolean:
-		return true, nil
+		return true, nil, ast.NewIdentifier(&typeName)
 	case lexer.TN_List:
 		if ok, err, _ := p.expectToken(lexer.KW_Of, "TypeName-ListOf"); !ok {
-			return false, err
+			return false, err, nil
 		}
 		return p.TypeName()
 	case lexer.TN_Map:
 		if ok, err, _ := p.expectToken(lexer.KW_Of, "TypeName-MapOfKey"); !ok {
-			return false, err
+			return false, err, nil
 		}
-		if ok, err := p.TypeName(); !ok {
-			return false, err.addRule("TypeName-MapKey")
+		if ok, err, _ := p.TypeName(); !ok {
+			return false, err.addRule("TypeName-MapKey"), nil
 		}
 		if ok, err, _ := p.expectToken(lexer.KW_To, "TypeName-MapToValue"); !ok {
-			return false, err
+			return false, err, nil
 		}
 		return p.TypeName()
 	case lexer.ItemIdent: // possibly undeclared typename
-		return true, nil
+		return true, nil, ast.NewIdentifier(&typeName)
 	default:
-		return false, NewParseError("Expected type name", typeName, "TypeName")
+		return false, NewParseError("Expected type name", typeName, "TypeName"), nil
 	}
 }
 
-func (p *Parser) Value() (bool, *ParseError) {
+func (p *Parser) Value() (bool, *ParseError, ast.Visitable) {
 	switch p.peekToken().TokType {
 	case lexer.LT_Number:
-		ok, err, _ := p.NumberLiteral()
-		return ok, err
+		ok, err, val := p.NumberLiteral()
+		return ok, err, val
 	case lexer.LT_Boolean:
-		ok, err, _ := p.BooleanLiteral()
-		return ok, err
+		ok, err, val := p.BooleanLiteral()
+		return ok, err, val
 	case lexer.LT_String:
-		ok, err, _ := p.StringLiteral()
-		return ok, err
+		ok, err, val := p.StringLiteral()
+		return ok, err, val
 	case lexer.KW_Containing:
-		return p.ListLiteral()
+		// TODO: Evaluating list literals
+		// return p.ListLiteral()
+		return true, nil, nil
 	default:
-		return false, NewParseError("Expected value", *p.peekToken(), "Value")
+		return false, NewParseError("Expected value", *p.peekToken(), "Value"), nil
 	}
 }
 
@@ -240,7 +251,7 @@ func (p *Parser) NumberLiteral() (bool, *ParseError, *ast.NumberLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_Number, "NumberLiteral"); !ok {
 		return false, err, nil
 	} else {
-		return true, nil, ast.NewNumberLiteral(*token)
+		return true, nil, ast.NewNumberLiteral(token)
 	}
 }
 
@@ -248,7 +259,7 @@ func (p *Parser) BooleanLiteral() (bool, *ParseError, *ast.BooleanLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_Boolean, "BooleanLiteral"); !ok {
 		return false, err, nil
 	} else {
-		return true, nil, ast.NewBooleanLiteral(*token)
+		return true, nil, ast.NewBooleanLiteral(token)
 	}
 }
 
@@ -256,7 +267,7 @@ func (p *Parser) StringLiteral() (bool, *ParseError, *ast.StringLiteral) {
 	if ok, err, token := p.expectToken(lexer.LT_String, "StringLiteral"); !ok {
 		return false, err, nil
 	} else {
-		return true, nil, ast.NewStringLiteral(*token)
+		return true, nil, ast.NewStringLiteral(token)
 	}
 }
 
@@ -362,7 +373,7 @@ func (p *Parser) RangeStart() (bool, *ParseError) {
 		p.getNextToken() // consume start
 		return true, nil
 	}
-	if ok, err := p.Number(); !ok {
+	if ok, err, _ := p.Number(); !ok {
 		return false, err.addRule("RangeStart-StartN")
 	}
 	return true, nil
@@ -374,33 +385,33 @@ func (p *Parser) RangeEnd() (bool, *ParseError) {
 		p.getNextToken() // consume end
 		return true, nil
 	}
-	if ok, err := p.Number(); !ok {
+	if ok, err, _ := p.Number(); !ok {
 		return false, err.addRule("RangeEnd")
 	}
 	return true, nil
 }
 
-func (p *Parser) Ident() (bool, *ParseError) {
+func (p *Parser) Ident() (bool, *ParseError, *ast.Identifier) {
 	ident := p.getNextToken()
 	if ident.TokType != lexer.ItemIdent {
-		return false, NewParseError("Expected identifier", ident, "Ident")
+		return false, NewParseError("Expected identifier", ident, "Ident"), nil
 	}
-	return true, nil
+	return true, nil, ast.NewIdentifier(&ident)
 }
 
-func (p *Parser) Number() (bool, *ParseError) {
+func (p *Parser) Number() (bool, *ParseError, ast.HasValue) {
 	if ok, _ := p.maybeToken(lexer.ItemIdent, "Number-Ident"); ok {
 		return p.Ident()
 	}
 	if ok, _ := p.maybeToken(lexer.LT_Number, "Number-NumberLiteral"); ok {
-		ok, err, _ := p.NumberLiteral()
-		return ok, err
+		ok, err, val := p.NumberLiteral()
+		return ok, err, val
 	}
-	return false, NewParseError("Expected number", *p.lastToken, "Number")
+	return false, NewParseError("Expected number", *p.lastToken, "Number"), nil
 }
 
 func (p *Parser) Nth() (bool, *ParseError) {
-	if ok, err := p.Number(); !ok {
+	if ok, err, _ := p.Number(); !ok {
 		return false, err.addRule("Nth-Number")
 	}
 	ok, err, _ := p.expectToken(lexer.KW_Th, "Nth-Th")
@@ -415,7 +426,7 @@ func (p *Parser) FunctionCall() (bool, *ParseError, *ast.FunctionCall) {
 	if ok, err, funcname := p.expectToken(lexer.ItemIdent, "FunctionCall-FuncName"); !ok {
 		return false, err, nil
 	} else {
-		call.FuncName = ast.NewIdentifier(*funcname)
+		call.FuncName = ast.NewIdentifier(funcname)
 	}
 	if ok, err, _ := p.expectToken(lexer.KW_To, "FunctionCall-To"); !ok {
 		return false, err, nil
@@ -426,5 +437,6 @@ func (p *Parser) FunctionCall() (bool, *ParseError, *ast.FunctionCall) {
 	} else {
 		call.FuncParams = primitive
 	}
+
 	return true, nil, &call
 }

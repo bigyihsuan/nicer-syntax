@@ -1,0 +1,3 @@
+constant ConstNumber is number 10
+constant Hello is string "hello world!"
+constant ThisIsNotTrue is boolean false

@@ -1,4 +1,3 @@
-constant ConstNumber is number 10 # constant
 variable VariableNumber is number # uninit variable
 variable OtherVariable is number 123 # variable with init
 variable X is string # uninit variable then assignment
