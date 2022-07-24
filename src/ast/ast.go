@@ -181,11 +181,11 @@ func (vd VarDecl) Accept(v Visitor) {
 	v.VisitVarDecl(v, &vd)
 }
 func NewVarDecl(name, typeName *Identifier, value Visitable) *VarDecl {
-	return &VarDecl{
-		VarName:  name,
-		TypeName: typeName,
-		Value:    value,
-	}
+	vardecl := new(VarDecl)
+	vardecl.VarName = name
+	vardecl.TypeName = typeName
+	vardecl.Value = value
+	return vardecl
 }
 
 type ConstDecl struct {
