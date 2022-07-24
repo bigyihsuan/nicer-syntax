@@ -89,29 +89,34 @@ func (p *Parser) maybeToken(tokType lex.Token, lastRule string) (bool, *ParseErr
 //! - Put back when hitting the end of a rule that consumes multiple
 //! - When going to a nested rule, peek to check for the starting token
 
-func (p *Parser) Parse() (bool, *ParseError) {
-	for len(p.Tokens) > 0 { // while there are still tokens
-		if ok, err := p.Program(); !ok {
-			return false, err
-		}
+func (p *Parser) Parse() (bool, *ParseError, *ast.Program) {
+	ok, err, prog := p.Program()
+	if !ok {
+		return false, err, nil
 	}
-	return true, nil
+	return true, nil, prog
 }
 
-func (p *Parser) Program() (bool, *ParseError) {
-	if ok, err, _ := p.Stmt(); !ok {
-		return false, err.addRule("Program-Stmt")
+func (p *Parser) Program() (bool, *ParseError, *ast.Program) {
+	program := ast.NewProgram()
+	for len(p.Tokens) > 0 {
+		ok, err, stmt := p.Stmt()
+		if !ok {
+			return false, err.addRule("Program-Stmt"), nil
+		}
+		if ok, err, _ := p.expectToken(lexer.ItemSemicolon, "Program-Semicolon"); !ok {
+			return false, err, nil
+		}
+		program.Statements = append(program.Statements, stmt)
 	}
-	if ok, err, _ := p.expectToken(lexer.ItemSemicolon, "Program"); !ok {
-		return false, err
-	}
-	return true, nil
+	return true, nil, program
 }
 
 func (p *Parser) Stmt() (bool, *ParseError, ast.Statement) {
-	if p.peekToken().TokType == lexer.ItemIdent {
+	switch p.peekToken().TokType {
+	case lexer.ItemIdent:
 		return p.IdentAssignment()
-	} else {
+	default:
 		return p.IdentDeclaration()
 	}
 }

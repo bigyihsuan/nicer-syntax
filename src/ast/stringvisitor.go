@@ -9,11 +9,15 @@ type stringStack []string
 
 func (vs *stringStack) Push(val string) {
 	*vs = append(*vs, val)
+	// fmt.Println("<<<", val)
+	// fmt.Printf("vs: %v\n", vs)
 }
 
 func (vs *stringStack) Pop() string {
 	val := (*vs)[len(*vs)-1]
 	*vs = (*vs)[:len(*vs)-1]
+	// fmt.Println(">>>", val)
+	// fmt.Printf("vs: %v\n", vs)
 	return val
 }
 
@@ -67,6 +71,17 @@ func (v *StringVisitor) VisitFunctionCall(_ Visitor, fc *FunctionCall) {
 	v.strings.Push(v.builder.String())
 }
 
+func (v *StringVisitor) VisitConstDecl(_ Visitor, cd *ConstDecl) {
+	v.builder.Reset()
+	v.VisitIdentifier(v, cd.ConstName)
+	ident := v.strings.Pop()
+	v.Visit(cd.TypeName)
+	typeName := v.strings.Pop()
+	v.Visit(cd.Value)
+	value := v.strings.Pop()
+	v.builder.WriteString(fmt.Sprintf("ConstDecl(%s %s %s)", ident, typeName, value))
+	v.strings.Push(v.builder.String())
+}
 func (v *StringVisitor) VisitVarDecl(_ Visitor, vd *VarDecl) {
 	v.builder.Reset()
 	v.VisitIdentifier(v, vd.VarName)
@@ -78,14 +93,61 @@ func (v *StringVisitor) VisitVarDecl(_ Visitor, vd *VarDecl) {
 	v.builder.WriteString(fmt.Sprintf("VarDecl(%s %s %s)", ident, typeName, value))
 	v.strings = append(v.strings, v.builder.String())
 }
-func (v *StringVisitor) VisitConstDecl(_ Visitor, cd *ConstDecl) {
+func (v *StringVisitor) VisitProgram(_ Visitor, p *Program) {
+	var strs = []string{
+		"Program(",
+	}
+	for _, stmt := range p.Statements {
+		v.VisitStatement(v, stmt)
+		s := v.strings.Pop()
+		strs = append(strs, s)
+		strs = append(strs, " ")
+	}
 	v.builder.Reset()
-	v.VisitIdentifier(v, cd.ConstName)
-	ident := v.strings.Pop()
-	v.Visit(cd.TypeName)
-	typeName := v.strings.Pop()
-	v.Visit(cd.Value)
-	value := v.strings.Pop()
-	v.builder.WriteString(fmt.Sprintf("ConstDecl(%s %s %s)", ident, typeName, value))
-	v.strings = append(v.strings, v.builder.String())
+	for i, s := range strs {
+		if i >= len(strs)-1 && s == " " {
+			break
+		}
+		v.builder.WriteString(s)
+	}
+	v.builder.WriteString(")")
+	v.strings.Push(v.builder.String())
+}
+
+func (v *StringVisitor) VisitStatement(_ Visitor, s Statement) {
+	switch s := s.(type) {
+	case *VarAssignment:
+		v.VisitVarAssignment(v, s)
+	case Declaration:
+		v.VisitDeclaration(v, s)
+	default:
+		v.strings.Push("UnkownStmt")
+	}
+	v.builder.Reset()
+	v.builder.WriteString("Statement(")
+	v.builder.WriteString(v.strings.Pop())
+	v.builder.WriteString(")")
+	v.strings.Push(v.builder.String())
+}
+
+func (v *StringVisitor) VisitVarAssignment(_ Visitor, va *VarAssignment) {
+	v.builder.Reset()
+	v.VisitIdentifier(v, va.Name)
+	name := v.strings.Pop()
+	v.Visit(va.Value)
+	val := v.strings.Pop()
+	v.builder.WriteString(fmt.Sprintf("VarAssignment(%s %s)", name, val))
+	v.strings.Push(v.builder.String())
+}
+
+func (v *StringVisitor) VisitDeclaration(_ Visitor, d Declaration) {
+	v.builder.Reset()
+	switch d := d.(type) {
+	case *VarDecl:
+		v.VisitVarDecl(v, d)
+	case *ConstDecl:
+		v.VisitConstDecl(v, d)
+	default:
+		v.strings.Push("UnknownDecl")
+	}
 }

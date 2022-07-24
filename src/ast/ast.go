@@ -14,26 +14,6 @@ import (
 - Functions
 */
 
-// type ParseTree struct {
-// 	left, right Visitable
-// }
-
-// // for Visitable interface
-// func (pt ParseTree) Visit(v Visitor) {
-// 	if pt.left != nil {
-// 		fmt.Printf("pt.left: %v\n", pt.left)
-// 		pt.left.Accept(v)
-// 	}
-// 	if pt.right != nil {
-// 		fmt.Printf("pt.right: %v\n", pt.right)
-// 		pt.right.Accept(v)
-// 	}
-// }
-
-// type Program struct {
-// 	ParseTree
-// }
-
 type HasValue interface{}
 
 type NumberLiteral struct {
@@ -160,13 +140,20 @@ type Declaration interface {
 
 type VarAssignment struct {
 	Statement
+	Name  *Identifier
+	Value Visitable
 }
 
 func NewVarAssignment(varName *Identifier, val Visitable) *VarAssignment {
 	varass := new(VarAssignment)
-	// varass.Name = varName
-	// varass.Value = val
+	varass.Name = varName
+	varass.Value = val
 	return varass
+}
+
+// ast.Visitable
+func (va VarAssignment) Accept(v Visitor) {
+	v.VisitVarAssignment(v, &va)
 }
 
 type VarDecl struct {
@@ -206,4 +193,18 @@ func NewConstDecl(name, typeName *Identifier, value Visitable) *ConstDecl {
 // ast.Visitable
 func (cd ConstDecl) Accept(v Visitor) {
 	v.VisitConstDecl(v, &cd)
+}
+
+type Program struct {
+	Statements []Statement
+}
+
+func NewProgram() *Program {
+	program := new(Program)
+	return program
+}
+
+// ast.Visitable
+func (p Program) Accept(v Visitor) {
+	v.VisitProgram(v, &p)
 }

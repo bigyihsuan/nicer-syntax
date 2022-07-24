@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"nicer-syntax/ast"
 	"nicer-syntax/lexer"
 	"nicer-syntax/parser"
 	"os"
@@ -42,9 +43,14 @@ func main() {
 	// }
 
 	p := parser.NewParser(tokens)
-	result, err := p.Parse()
+	result, err, prog := p.Parse()
 	fmt.Printf("result: %v\n", result)
 	fmt.Printf("%v\n", err)
+	visitor := ast.NewEvaluatingVisitor()
+	stringvisitor := ast.StringVisitor{}
+	prog.Accept(&stringvisitor)
+	fmt.Println(stringvisitor)
+	prog.Accept(visitor)
 	// ast.Evaluate()
 
 }
